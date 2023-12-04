@@ -11,4 +11,3 @@ def test_day_part1():
 
 def test_day_part2():
     assert part2(test_data) == 0
-

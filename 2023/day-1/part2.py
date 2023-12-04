@@ -59,7 +59,7 @@ def sum_calibration_values(data: list[str]) -> int:
     return sum(_yield_values())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     data = open("input/input.txt").read()
     answer = sum_calibration_values(data.splitlines())
     print(f"Answer is: {answer}")

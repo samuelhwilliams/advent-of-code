@@ -12,6 +12,6 @@ def make_day(day: str):
     shutil.copyfile(".templates/sample-test-day.py", f"{dirname}/test_day.py")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     make_day(sys.argv[1])
     print("Done.")

@@ -25,7 +25,10 @@ def is_game_possible(game_cubedraws: str) -> bool:
     available_cubes = {"red": 12, "green": 13, "blue": 14}
 
     return all(
-        all(available_cubes.get(cube_colour, 0) >= int(cube_count) for cube_count, cube_colour in yield_cubesets(cubedraw))
+        all(
+            available_cubes.get(cube_colour, 0) >= int(cube_count)
+            for cube_count, cube_colour in yield_cubesets(cubedraw)
+        )
         for cubedraw in yield_cubedraws(game_cubedraws)
     )
 

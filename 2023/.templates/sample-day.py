@@ -12,8 +12,8 @@ def part2(file_contents: str) -> int:
     return 0
 
 
-if __name__ == '__main__':
-    with open('input.txt') as f:
+if __name__ == "__main__":
+    with open("input.txt") as f:
         data = f.read()
 
     answer1 = part1(data)
