@@ -1,4 +1,26 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+
+from rich import print
+
+from helpers import load_input
+
+
+def part1(data: list[str]) -> int:
+    def _yield_values():
+        for line in data:
+            first_seen, latest_seen = None, None
+
+            for char in line:
+                if char.isdigit():
+                    if first_seen is None:
+                        first_seen = char
+                    latest_seen = char
+
+            last_seen = latest_seen
+            yield int(first_seen + last_seen)
+
+    return sum(_yield_values())
+
 
 values = {
     "1",
@@ -34,7 +56,7 @@ convert = {
 }
 
 
-def sum_calibration_values(data: list[str]) -> int:
+def part2(data: list[str]) -> int:
     def _yield_values():
         for line in data:
             first_seen, latest_seen = None, None
@@ -60,6 +82,26 @@ def sum_calibration_values(data: list[str]) -> int:
 
 
 if __name__ == "__main__":
-    data = open("input/input.txt").read()
-    answer = sum_calibration_values(data.splitlines())
-    print(f"Answer is: {answer}")
+    data = load_input(__file__).strip().splitlines()
+    answer1, answer2 = part1(data), part2(data)
+    print(f"Answer is: {answer1=}, {answer2=}")
+
+
+def test_part1():
+    data = """1abc2
+pqr3stu8vwx
+a1b2c3d4e5f
+treb7uchet
+"""
+    assert part1(data.splitlines()) == 142
+
+
+def test_part2():
+    data = """two1nine
+eightwothree
+abcone2threexyz
+xtwone3four
+4nineeightseven2
+zoneight234
+7pqrstsixteen"""
+    assert part2(data.splitlines()) == 281
