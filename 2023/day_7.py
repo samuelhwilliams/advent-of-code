@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import dataclasses
+import enum
 from collections import Counter
 from functools import cached_property
 
@@ -13,85 +14,82 @@ CARD_STRENGTHS: dict[str, int] = {c: 12 - i for i, c in enumerate("AKQJT98765432
 JOKER_CARD_STRENGTHS: dict[str, int] = {c: 12 - i for i, c in enumerate("AKQT98765432J")}
 
 
+class HandType(int, enum.Enum):
+    FIVE_OAK = 6
+    FOUR_OAK = 5
+    FULL_HOUSE = 4
+    THREE_OAK = 3
+    TWO_PAIR = 2
+    ONE_PAIR = 1
+    HIGH_CARD = 0
+
+
 @dataclasses.dataclass
 class CamelCard:
     hand: str
     bid: int
 
     @cached_property
-    def type(self):
+    def type(self) -> HandType:
         counter = Counter(self.hand)
         most_common = counter.most_common()
         if most_common[0][1] == 5:
-            return 10
+            return HandType.FIVE_OAK
         elif most_common[0][1] == 4:
-            return 9
+            return HandType.FOUR_OAK
         elif most_common[0][1] == 3 and most_common[1][1] == 2:
-            return 8
+            return HandType.FULL_HOUSE
         elif most_common[0][1] == 3:
-            return 7
+            return HandType.THREE_OAK
         elif most_common[0][1] == 2 and most_common[1][1] == 2:
-            return 6
+            return HandType.TWO_PAIR
         elif most_common[0][1] == 2:
-            return 5
+            return HandType.ONE_PAIR
         else:
-            return 4
+            return HandType.HIGH_CARD
 
     @cached_property
-    def strength(self) -> tuple[int]:
+    def strength(self) -> tuple[int, ...]:
         return tuple(CARD_STRENGTHS[card] for card in self.hand)
 
     @cached_property
-    def joker_type(self):
+    def joker_type(self) -> HandType:
         counter = Counter(self.hand)
         joker_count = counter.pop("J", 0)
         most_common = counter.most_common()
-        # Five of a kind
         if joker_count == 5:
-            return 10
+            return HandType.FIVE_OAK
         elif most_common[0][1] == 5:
-            return 10
+            return HandType.FIVE_OAK
         elif most_common[0][1] + joker_count == 5:
-            return 10
-
-        # Four of a kind
+            return HandType.FIVE_OAK
         elif most_common[0][1] == 4:
-            return 9
+            return HandType.FOUR_OAK
         elif most_common[0][1] + joker_count == 4:
-            return 9
-
-        # Full house
+            return HandType.FOUR_OAK
         elif most_common[0][1] == 3 and most_common[1][1] == 2:
-            return 8
+            return HandType.FULL_HOUSE
         elif most_common[0][1] + joker_count == 3 and most_common[1][1] == 2:
-            return 8
+            return HandType.FULL_HOUSE
         elif most_common[0][1] == 3 and most_common[1][1] + joker_count == 2:
-            return 8
-
-        # Three of a kind
+            return HandType.FULL_HOUSE
         elif most_common[0][1] == 3:
-            return 7
+            return HandType.THREE_OAK
         elif most_common[0][1] + joker_count == 3:
-            return 7
-
-        # Two pair
+            return HandType.THREE_OAK
         elif most_common[0][1] == 2 and most_common[1][1] == 2:
-            return 6
+            return HandType.TWO_PAIR
         elif most_common[0][1] == 2 and most_common[1][1] + joker_count == 2:
-            return 6
-
-        # One pair
+            return HandType.TWO_PAIR
         elif most_common[0][1] == 2:
-            return 5
+            return HandType.ONE_PAIR
         elif most_common[0][1] + joker_count == 2:
-            return 5
-
-        # High card
+            return HandType.ONE_PAIR
         else:
-            return 4
+            return HandType.HIGH_CARD
 
     @cached_property
-    def joker_strength(self) -> tuple[int]:
+    def joker_strength(self) -> tuple[int, ...]:
         return tuple(JOKER_CARD_STRENGTHS[card] for card in self.hand)
 
     @classmethod
@@ -148,20 +146,20 @@ def test_part2():
 @pytest.mark.parametrize(
     "hand, expected_type",
     (
-        ("AAAAJ", 10),
-        ("AAJAJ", 10),
-        ("AAJKJ", 9),
-        ("AAAAK", 9),
-        ("AAJKA", 9),
-        ("AAAKK", 8),
-        ("AAJKK", 8),
-        ("AAJKJ", 9),
-        ("AJJKK", 9),
-        ("AAAKK", 8),
-        ("AAJKK", 8),
-        ("AKQJJ", 7),
-        ("AKQTJ", 5),
-        ("AKQT9", 4),
+        ("AAAAJ", HandType.FIVE_OAK),
+        ("AAJAJ", HandType.FIVE_OAK),
+        ("AAJKJ", HandType.FOUR_OAK),
+        ("AAAAK", HandType.FOUR_OAK),
+        ("AAJKA", HandType.FOUR_OAK),
+        ("AAJKJ", HandType.FOUR_OAK),
+        ("AJJKK", HandType.FOUR_OAK),
+        ("AAAKK", HandType.FULL_HOUSE),
+        ("AAJKK", HandType.FULL_HOUSE),
+        ("AAAKK", HandType.FULL_HOUSE),
+        ("AAJKK", HandType.FULL_HOUSE),
+        ("AKQJJ", HandType.THREE_OAK),
+        ("AKQTJ", HandType.ONE_PAIR),
+        ("AKQT9", HandType.HIGH_CARD),
     ),
 )
 def test_part2_joker_hand_types(hand, expected_type):
