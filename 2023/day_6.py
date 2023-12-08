@@ -20,7 +20,7 @@ def parse_racelist(file_contents: str) -> list[Race]:
     return [Race(int(t), int(d)) for t, d in zip(re.split(r"\s+", times)[1:], re.split(r"\s+", distances)[1:])]
 
 
-def solve_quadratic(a, b, c) -> list[float, float]:
+def solve_quadratic(a, b, c) -> list[float]:
     return [(-b + (one * math.sqrt(b**2 - (4 * a * c)))) / (2 * a) for one in [1, -1]]
 
 
