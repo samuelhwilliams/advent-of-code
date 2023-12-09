@@ -12,29 +12,16 @@ def parse_file_contents(file_contents: str) -> list[list[int]]:
 
 def calculate_next_value(data: list[int]) -> tuple[int, int]:
     diffs = [(b - a) for a, b in zip(data[:-1], data[1:])]
-    delta = 0
-    if not all(diff == 0 for diff in diffs):
-        _, delta = calculate_next_value(diffs)
-    next_value = data[-1] + diffs[-1] + delta
-    return next_value, diffs[-1] + delta
+    delta = 0 if all(x == 0 for x in diffs) else calculate_next_value(diffs)[1]
+    return data[-1] + diffs[-1] + delta, diffs[-1] + delta
 
 
 def part1(file_contents: str) -> int:
-    data = parse_file_contents(file_contents)
-    total = 0
-    for line in data:
-        x, delta = calculate_next_value(line)
-        total += x
-    return total
+    return sum(calculate_next_value(line)[0] for line in parse_file_contents(file_contents))
 
 
 def part2(file_contents: str) -> int:
-    data = parse_file_contents(file_contents)
-    total = 0
-    for line in data:
-        x, delta = calculate_next_value(line[::-1])
-        total += x
-    return total
+    return sum(calculate_next_value(line[::-1])[0] for line in parse_file_contents(file_contents))
 
 
 if __name__ == "__main__":
