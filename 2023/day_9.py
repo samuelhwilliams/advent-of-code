@@ -29,8 +29,12 @@ def part1(file_contents: str) -> int:
 
 
 def part2(file_contents: str) -> int:
-    parse_file_contents(file_contents)
-    return 0
+    data = parse_file_contents(file_contents)
+    total = 0
+    for line in data:
+        x, delta = calculate_next_value(line[::-1])
+        total += x
+    return total
 
 
 if __name__ == "__main__":
@@ -52,4 +56,4 @@ def test_part1():
 
 
 def test_part2():
-    assert part2(test_data) == 0
+    assert part2(test_data) == 2
