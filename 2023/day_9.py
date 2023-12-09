@@ -10,18 +10,18 @@ def parse_file_contents(file_contents: str) -> list[list[int]]:
     return [[int(i) for i in line.split(" ")] for line in data]
 
 
-def calculate_next_value(data: list[int]) -> tuple[int, int]:
+def next_value_and_delta(data: list[int]) -> tuple[int, int]:
     diffs = [(b - a) for a, b in zip(data[:-1], data[1:])]
-    delta = 0 if all(x == 0 for x in diffs) else calculate_next_value(diffs)[1]
+    delta = 0 if all(x == 0 for x in diffs) else next_value_and_delta(diffs)[1]
     return data[-1] + diffs[-1] + delta, diffs[-1] + delta
 
 
 def part1(file_contents: str) -> int:
-    return sum(calculate_next_value(line)[0] for line in parse_file_contents(file_contents))
+    return sum(next_value_and_delta(line)[0] for line in parse_file_contents(file_contents))
 
 
 def part2(file_contents: str) -> int:
-    return sum(calculate_next_value(line[::-1])[0] for line in parse_file_contents(file_contents))
+    return sum(next_value_and_delta(line[::-1])[0] for line in parse_file_contents(file_contents))
 
 
 if __name__ == "__main__":
