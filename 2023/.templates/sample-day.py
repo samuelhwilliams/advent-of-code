@@ -6,11 +6,18 @@ from rich import print
 from helpers import load_input
 
 
+def parse_file_contents(file_contents: str) -> list[str]:
+    data = file_contents.splitlines()
+    return data
+
+
 def part1(file_contents: str) -> int:
+    parse_file_contents(file_contents)
     return 0
 
 
 def part2(file_contents: str) -> int:
+    parse_file_contents(file_contents)
     return 0
 
 
