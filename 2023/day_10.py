@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import dataclasses
 import enum
-from itertools import combinations
+from collections import Counter
 from typing import Optional
 
 import pytest
@@ -18,22 +18,107 @@ class Node:
     char: str
     depth: Optional[int] = None
     inside: Optional[bool] = None
-    walked: bool = False
 
     @property
     def pipe(self):
         return self.depth is not None
 
 
-def print_grid(grid: list[list[Node]], max_depth: int = 10_000, cur_coord: Optional[tuple[int, int]] = None):
+class Direction(enum.Enum):
+    ABOVE = (-1, 0)
+    LEFT = (0, -1)
+    RIGHT = (0, 1)
+    BELOW = (1, 0)
+
+    @property
+    def pipes(self):
+        if self == Direction.ABOVE:
+            return {"|", "F", "7"}
+        elif self == Direction.LEFT:
+            return {"-", "F", "L"}
+        elif self == Direction.RIGHT:
+            return {"-", "7", "J"}
+        else:
+            return {"|", "J", "L"}
+
+    @property
+    def opposite(self):
+        return Direction((self.value[0] * -1, self.value[1] * -1))
+
+
+def get_node(grid: list[list[Node]], coord: tuple[int, int]) -> Node:
+    return grid[coord[0]][coord[1]]
+
+
+def get_adjacent_coord(coord: tuple[int, int], direction: Direction) -> tuple[int, int]:
+    return coord[0] + direction.value[0], coord[1] + direction.value[1]
+
+
+def parse_file_contents(file_contents: str) -> list[list[Node]]:
+    grid = parse_grid(file_contents, pad_edges=".")
+    return [[Node(c) for c in row] for row in grid]
+
+
+def solve_s_piece(grid: list[list[Node]], coord: tuple[int, int]):
+    x, y = coord
+    above, left, right, below = (
+        get_node(grid, get_adjacent_coord((x, y), Direction.ABOVE)),
+        get_node(grid, get_adjacent_coord((x, y), Direction.LEFT)),
+        get_node(grid, get_adjacent_coord((x, y), Direction.RIGHT)),
+        get_node(grid, get_adjacent_coord((x, y), Direction.BELOW)),
+    )
+    if above.char in Direction.ABOVE.pipes and left.char in Direction.LEFT.pipes:
+        return "J"
+    elif above.char in Direction.ABOVE.pipes and right.char in Direction.RIGHT.pipes:
+        return "L"
+    elif above.char in Direction.ABOVE.pipes and below.char in Direction.BELOW.pipes:
+        return "|"
+    elif left.char in Direction.LEFT.pipes and right.char in Direction.RIGHT.pipes:
+        return "-"
+    elif left.char in Direction.LEFT.pipes and below.char in Direction.BELOW.pipes:
+        return "7"
+    elif below.char in Direction.BELOW.pipes and right.char in Direction.RIGHT.pipes:
+        return "F"
+
+
+def find_and_fix_start_tile(grid):
+    for x in range(len(grid)):
+        for y in range(len(grid[x])):
+            if grid[x][y].char == "S":
+                grid[x][y].char = solve_s_piece(grid, (x, y))
+                return x, y
+
+
+def follow_pipes_and_record_depths(grid: list[list[Node]], queue: list[tuple[tuple[int, int], int]]):
+    i = 0
+    while i < len(queue):
+        coord, depth = queue[i]
+
+        if isinstance(grid[coord[0]][coord[1]].depth, int):
+            i += 1
+            continue
+
+        self = get_node(grid, coord)
+        neighbours = [(direction, get_adjacent_coord(coord, direction)) for direction in Direction]
+        track_neighbour_depths: Counter = Counter()
+        for direction, neighbour_coord in neighbours:
+            neighbour = get_node(grid, neighbour_coord)
+            if neighbour.char in direction.pipes and self.char in direction.opposite.pipes:
+                queue.append((neighbour_coord, depth + 1))
+                grid[coord[0]][coord[1]].depth = depth
+                track_neighbour_depths.update([depth + 1])
+
+        i += 1
+
+
+def print_grid(grid: list[list[Node]], cur_coord: Optional[tuple[int, int]] = None):
+    max_depth = max([node.depth or 0 for row in grid for node in row])
     for x, row in enumerate(grid):
         for y, node in enumerate(row):
-            if node.depth is not None:
-                gradient = min(128, node.depth * 128 // max_depth)
+            if node.pipe:
+                gradient = min(128, (node.depth or 0) * 128 // max_depth)
                 if cur_coord and cur_coord == (x, y):
                     style = Style(color="white", bgcolor="green", blink=True, blink2=True)
-                elif node.walked:
-                    style = Style(bgcolor="yellow")
                 elif node.depth == max_depth or node.depth == 0:
                     style = Style(color="black", bgcolor="yellow")
                 else:
@@ -47,7 +132,7 @@ def print_grid(grid: list[list[Node]], max_depth: int = 10_000, cur_coord: Optio
                         color="white",
                         bgcolor="rgb(0, 255, 255)"
                         if node.inside
-                        else "rgb(255, 0, 255)"
+                        else "rgb(0, 0, 0)"
                         if node.inside is not None
                         else "#000000",
                     )
@@ -55,262 +140,38 @@ def print_grid(grid: list[list[Node]], max_depth: int = 10_000, cur_coord: Optio
         console.print("\n", end="")
 
 
-def parse_file_contents(file_contents: str) -> list[list[Node]]:
-    grid = parse_grid(file_contents, pad_edges=".")
-    return [[Node(c) for c in row] for row in grid]
-
-
-def get_starting_coord(grid):
-    for x in range(len(grid)):
-        for y in range(len(grid[x])):
-            if grid[x][y].char == "S":
-                return x, y
-
-
-def flood_fill_depths(grid: list[list[Node]], queue: list[tuple[tuple[int, int], int]]) -> int:
-    i = 0
-    loops = set()
-    while i < len(queue):
-        coord, depth = queue[i]
-
-        if isinstance(grid[coord[0]][coord[1]].depth, int):
-            i += 1
-            continue
-
-        above, left, self, right, below = (
-            grid[coord[0] - 1][coord[1]],
-            grid[coord[0]][coord[1] - 1],
-            grid[coord[0]][coord[1]],
-            grid[coord[0]][coord[1] + 1],
-            grid[coord[0] + 1][coord[1]],
-        )
-        if above.char in {"|", "F", "7"} and self.char in {"S", "|", "J", "L"}:
-            queue.append(((coord[0] - 1, coord[1]), depth + 1))
-            grid[coord[0]][coord[1]].depth = depth
-        if left.char in {"-", "F", "L"} and self.char in {"S", "-", "J", "7"}:
-            queue.append(((coord[0], coord[1] - 1), depth + 1))
-            grid[coord[0]][coord[1]].depth = depth
-        if right.char in {"-", "J", "7"} and self.char in {"S", "-", "F", "L"}:
-            queue.append(((coord[0], coord[1] + 1), depth + 1))
-            grid[coord[0]][coord[1]].depth = depth
-        if below.char in {"|", "L", "J"} and self.char in {"S", "|", "F", "7"}:
-            queue.append(((coord[0] + 1, coord[1]), depth + 1))
-            grid[coord[0]][coord[1]].depth = depth
-
-        if any(x == y for x, y in combinations([above.depth, left.depth, right.depth, below.depth], 2)):
-            loops.add(depth)
-
-        i += 1
-
-    return max(loops)
-
-
 def part1(file_contents: str) -> int:
     grid = parse_file_contents(file_contents)
-    coords = [(get_starting_coord(grid), 0)]
-    return flood_fill_depths(grid, coords)
-
-
-class Direction(enum.Enum):
-    ABOVE = (-1, 0)
-    LEFT = (0, -1)
-    RIGHT = (0, 1)
-    BELOW = (1, 0)
-
-    def opposite(self):
-        return Direction((self.value[0] * -1, self.value[1] * -1))
-
-
-def get_node(grid: list[list[Node]], coord: tuple[int, int]) -> Node:
-    return grid[coord[0]][coord[1]]
-
-
-def get_adjacent_coord(coord: tuple[int, int], direction: Direction) -> tuple[int, int]:
-    return coord[0] + direction.value[0], coord[1] + direction.value[1]
-
-
-def next_step(
-    grid, coord: tuple[int, int], from_direction: Direction, inside_direction: Direction
-) -> tuple[tuple[int, int], Direction, Direction]:
-    node = get_node(grid, coord)
-    node.walked = True
-
-    if node.char == "-" and from_direction in {Direction.LEFT, Direction.RIGHT}:
-        next_direction = from_direction.opposite()
-    elif node.char == "|" and from_direction in {Direction.ABOVE, Direction.BELOW}:
-        next_direction = from_direction.opposite()
-    else:
-        if from_direction == Direction.LEFT:
-            assert inside_direction in {Direction.ABOVE, Direction.BELOW}
-            if node.char == "7":
-                next_direction = Direction.BELOW
-                inside_direction = Direction.RIGHT if inside_direction == Direction.ABOVE else Direction.LEFT
-            else:  # J
-                next_direction = Direction.ABOVE
-                inside_direction = Direction.LEFT if inside_direction == Direction.ABOVE else Direction.RIGHT
-
-        elif from_direction == Direction.ABOVE:
-            assert inside_direction in {Direction.LEFT, Direction.RIGHT}
-            if node.char == "J":
-                next_direction = Direction.LEFT
-                inside_direction = Direction.ABOVE if inside_direction == Direction.LEFT else Direction.BELOW
-            else:  # L
-                next_direction = Direction.RIGHT
-                inside_direction = Direction.BELOW if inside_direction == Direction.LEFT else Direction.ABOVE
-
-        elif from_direction == Direction.RIGHT:
-            assert inside_direction in {Direction.ABOVE, Direction.BELOW}
-            if node.char == "L":
-                next_direction = Direction.ABOVE
-                inside_direction = Direction.RIGHT if inside_direction == Direction.ABOVE else Direction.LEFT
-            else:  # F
-                next_direction = Direction.BELOW
-                inside_direction = Direction.LEFT if inside_direction == Direction.ABOVE else Direction.RIGHT
-
-        elif from_direction == Direction.BELOW:
-            assert inside_direction in {Direction.LEFT, Direction.RIGHT}
-            if node.char == "7":
-                next_direction = Direction.LEFT
-                inside_direction = Direction.BELOW if inside_direction == Direction.LEFT else Direction.ABOVE
-            else:  # F
-                next_direction = Direction.RIGHT
-                inside_direction = Direction.ABOVE if inside_direction == Direction.LEFT else Direction.BELOW
-
-        else:
-            raise RuntimeError("ohno")
-
-    return get_adjacent_coord(coord, next_direction), next_direction.opposite(), inside_direction
-
-
-def mark_and_fill(grid, queue: list[tuple[int, int]], inside: bool) -> int:
-    marked = 0
-    while queue:
-        coord = queue.pop()
-        if coord[0] < 0 or coord[0] >= len(grid) or coord[1] < 0 or coord[1] >= len(grid[0]):
-            continue
-        node = get_node(grid, coord)
-        if node.depth is not None or node.inside is not None:
-            continue
-
-        node.inside = inside
-        marked += 1
-
-        for adjacent in [Direction.ABOVE, Direction.LEFT, Direction.RIGHT, Direction.BELOW]:
-            adjacent_coord = get_adjacent_coord(coord, adjacent)
-            if (
-                adjacent_coord[0] < 0
-                or adjacent_coord[0] >= len(grid)
-                or adjacent_coord[1] < 0
-                or adjacent_coord[1] >= len(grid[0])
-            ):
-                continue
-
-            adjacent_node = get_node(grid, adjacent_coord)
-            if adjacent_node and adjacent_node.depth is None and adjacent_node.inside is None:
-                queue.append(adjacent_coord)
-
-    return marked
-
-
-def mark_nodes_inside_or_outside(grid, coord: tuple[int, int], from_direction: Direction, inside_direction: Direction):
-    queue = [get_adjacent_coord(coord, inside_direction)]
-    mark_and_fill(grid, queue, inside=True)
-
-    queue = [get_adjacent_coord(coord, inside_direction.opposite())]
-    mark_and_fill(grid, queue, inside=False)
-
-    node = get_node(grid, coord)
-    if from_direction == Direction.LEFT:
-        if node.char == "7":
-            queue = [get_adjacent_coord(coord, Direction.ABOVE), get_adjacent_coord(coord, Direction.RIGHT)]
-            mark_and_fill(grid, queue, inside=inside_direction != Direction.BELOW)
-        elif node.char == "J":
-            queue = [get_adjacent_coord(coord, Direction.BELOW), get_adjacent_coord(coord, Direction.RIGHT)]
-            mark_and_fill(grid, queue, inside=inside_direction != Direction.ABOVE)
-    elif from_direction == Direction.RIGHT:
-        if node.char == "F":
-            queue = [get_adjacent_coord(coord, Direction.ABOVE), get_adjacent_coord(coord, Direction.LEFT)]
-            mark_and_fill(grid, queue, inside=inside_direction != Direction.BELOW)
-        elif node.char == "L":
-            queue = [get_adjacent_coord(coord, Direction.BELOW), get_adjacent_coord(coord, Direction.LEFT)]
-            mark_and_fill(grid, queue, inside=inside_direction != Direction.ABOVE)
-
-    elif from_direction == Direction.ABOVE:
-        if node.char == "L":
-            queue = [get_adjacent_coord(coord, Direction.BELOW), get_adjacent_coord(coord, Direction.LEFT)]
-            mark_and_fill(grid, queue, inside=inside_direction != Direction.RIGHT)
-        elif node.char == "J":
-            queue = [get_adjacent_coord(coord, Direction.BELOW), get_adjacent_coord(coord, Direction.LEFT)]
-            mark_and_fill(grid, queue, inside=inside_direction != Direction.LEFT)
-
-    elif from_direction == Direction.BELOW:
-        if node.char == "F":
-            queue = [get_adjacent_coord(coord, Direction.ABOVE), get_adjacent_coord(coord, Direction.LEFT)]
-            mark_and_fill(grid, queue, inside=inside_direction != Direction.RIGHT)
-        elif node.char == "7":
-            queue = [get_adjacent_coord(coord, Direction.ABOVE), get_adjacent_coord(coord, Direction.LEFT)]
-            mark_and_fill(grid, queue, inside=inside_direction != Direction.LEFT)
-
-
-def count_inside_tiles(grid, start: tuple[int, int], max_depth: int) -> int:
-    from_direction = Direction.LEFT
-    inside_direction = Direction.BELOW
-    next_coord = (start[0], start[1] + 1)
-    i = 0
-    while next_coord != start:
-        mark_nodes_inside_or_outside(grid, next_coord, from_direction=from_direction, inside_direction=inside_direction)
-        next_coord, from_direction, inside_direction = next_step(
-            grid, next_coord, from_direction=from_direction, inside_direction=inside_direction
-        )
-        i += 1
-
-    print_grid(grid, max_depth=max_depth)
-
-    return sum([1 if node.inside else 0 for row in grid for node in row])
-
-
-def replace_start_with_pipe(grid: list[list[Node]]):
-    for x, row in enumerate(grid):
-        for y, node in enumerate(grid[x]):
-            if node.char == "S":
-                above, left, right, below = (
-                    get_node(grid, get_adjacent_coord((x, y), Direction.ABOVE)),
-                    get_node(grid, get_adjacent_coord((x, y), Direction.LEFT)),
-                    get_node(grid, get_adjacent_coord((x, y), Direction.RIGHT)),
-                    get_node(grid, get_adjacent_coord((x, y), Direction.BELOW)),
-                )
-                above_chars = {"|", "F", "7"}
-                left_chars = {"-", "F", "L"}
-                right_chars = {"-", "7", "J"}
-                below_chars = {"|", "J", "L"}
-                if above.char in above_chars and left.char in left_chars:
-                    node.char = "J"
-                elif above.char in above_chars and right.char in right_chars:
-                    node.char = "L"
-                elif above.char in above_chars and below.char in below_chars:
-                    node.char = "|"
-                elif left.char in left_chars and right.char in right_chars:
-                    node.char = "-"
-                elif left.char in left_chars and below.char in below_chars:
-                    node.char = "7"
-                elif below.char in below_chars and right.char in right_chars:
-                    node.char = "F"
+    coords = [(find_and_fix_start_tile(grid), 0)]
+    follow_pipes_and_record_depths(grid, coords)
+    return max(node.depth or 0 for row in grid for node in row)
 
 
 def part2(file_contents: str) -> int:
     grid = parse_file_contents(file_contents)
-    coords = [(get_starting_coord(grid), 0)]
-    max_depth = flood_fill_depths(grid, coords)
-    replace_start_with_pipe(grid)
+    coords = [(find_and_fix_start_tile(grid), 0)]
+    follow_pipes_and_record_depths(grid, coords)
 
     for x in range(len(grid)):
+        inside = False
+        last_corner = None
         for y in range(len(grid[x])):
-            if grid[x][y].pipe:
-                return count_inside_tiles(grid, start=(x, y), max_depth=max_depth)
+            node = get_node(grid, (x, y))
+            if not node.pipe:
+                node.inside = inside
             else:
-                grid[x][y].inside = False
+                if node.char == "|":
+                    inside = not inside
+                elif last_corner is None:
+                    last_corner = node.char
+                elif node.char != "-":
+                    corners = {last_corner, node.char}
+                    if corners == {"F", "J"} or corners == {"7", "L"}:
+                        inside = not inside
+                    last_corner = None
 
-    raise RuntimeError("didn't find edge")
+    print_grid(grid)
+    return sum(1 if node.inside else 0 for row in grid for node in row)
 
 
 if __name__ == "__main__":
