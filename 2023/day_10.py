@@ -8,8 +8,7 @@ import pytest
 from rich import get_console
 from rich.style import Style
 
-from helpers import load_input
-
+from helpers import load_input, parse_grid
 
 console = get_console()
 
@@ -57,14 +56,8 @@ def print_grid(grid: list[list[Node]], max_depth: int = 10_000, cur_coord: Optio
 
 
 def parse_file_contents(file_contents: str) -> list[list[Node]]:
-    data = [[Node(c) for c in line.strip()] for line in file_contents.strip().splitlines()]
-    for row in data:
-        row.insert(0, Node("."))
-        row.append(Node("."))
-    width = len(data[0])
-    data.insert(0, [Node(".") for _ in range(width)])
-    data.append([Node(".") for _ in range(width)])
-    return data
+    grid = parse_grid(file_contents, pad_edges=".")
+    return [[Node(c) for c in row] for row in grid]
 
 
 def get_starting_coord(grid):
