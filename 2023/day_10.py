@@ -5,12 +5,12 @@ from collections import Counter
 from typing import Optional
 
 import pytest
-from rich import get_console
+from rich.console import Console
 from rich.style import Style
 
 from helpers import load_input, parse_grid
 
-console = get_console()
+console = Console(record=True, highlight=False)
 
 
 @dataclasses.dataclass
@@ -116,28 +116,34 @@ def print_grid(grid: list[list[Node]], cur_coord: Optional[tuple[int, int]] = No
     for x, row in enumerate(grid):
         for y, node in enumerate(row):
             if node.pipe:
-                gradient = min(128, (node.depth or 0) * 128 // max_depth)
                 if cur_coord and cur_coord == (x, y):
-                    style = Style(color="white", bgcolor="green", blink=True, blink2=True)
+                    style = Style(color="white", bgcolor="rgb(0,255,0)", blink=True, blink2=True)
                 elif node.depth == max_depth or node.depth == 0:
-                    style = Style(color="black", bgcolor="yellow")
+                    style = Style(color="black", bgcolor="rgb(255,255,0)")
                 else:
-                    style = Style(color="white", bgcolor=f"rgb(128, 0, {gradient})")
+                    r, g, b = (
+                        abs((196 if node.depth % 256 >= 128 else -64) - (node.depth % 128)),
+                        abs((196 if (node.depth // 2) % 256 >= 128 else -64) - ((node.depth // 2) % 128)),
+                        abs((196 if (node.depth // 3) % 256 >= 128 else -64) - ((node.depth // 3) % 128)),
+                    )
+                    style = Style(color="white", bgcolor=f"rgb({r}, {g}, {b})")
                 console.print(str(node.char), end="", style=style)
             else:
                 if cur_coord and cur_coord == (x, y):
                     style = Style(color="green", bgcolor="green", blink=True, blink2=True)
                 else:
                     style = Style(
-                        color="white",
-                        bgcolor="rgb(0, 255, 255)"
+                        color="rgb(75, 75, 75)",
+                        bgcolor="rgb(255, 0, 0)"
                         if node.inside
                         else "rgb(0, 0, 0)"
                         if node.inside is not None
-                        else "#000000",
+                        else "rgb(255, 255, 255)",
                     )
-                console.print(" ", end="", style=style)
+                console.print(node.char, end="", style=style)
         console.print("\n", end="")
+
+    console.save_svg(path="day-10.svg")
 
 
 def part1(file_contents: str) -> int:
