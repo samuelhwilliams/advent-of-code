@@ -8,10 +8,20 @@ from io import StringIO
 import pytest
 from rich import print
 
-from helpers import load_input, get_current_day, download_input_data, make_day, RecordTime
+from helpers import (
+    load_input,
+    get_current_day,
+    download_input_data,
+    make_day,
+    RecordTime,
+    make_star_record,
+    has_star,
+    submit_answer,
+)
 
 if __name__ == "__main__":
     current_day = sys.argv[1] if len(sys.argv) >= 2 else get_current_day()
+    make_star_record()
     make_day(current_day)
     download_input_data(current_day)
     solution_filename = f"day_{current_day}.py"
@@ -29,10 +39,7 @@ if __name__ == "__main__":
             print("\t Tests:", "✅")
         else:
             print("\t Tests:", "❌")
-            stdout.seek(0)
-            stdout_raw = stdout.read()
-            stdout_test_results = stdout_raw[stdout_raw.find("\n", stdout_raw.find("= FAILURES =")) :]
-            print(stdout_test_results)
+            retval = pytest.main([solution_filename, "-k", f"test_part{part}", "-vvvs"])
             sys.exit(part)
 
         solution_module = importlib.import_module(solution_filename[:-3])
@@ -44,3 +51,14 @@ if __name__ == "__main__":
             f"\tAnswer: {answer}",
         )
         print(f"\t  Took: {rt.time}")
+
+        if not has_star(current_day, part):
+            print("\n\t[bold]Submit?[/bold] ", end="")
+            submit = input()
+            if submit.lower() in {"y", "yes"}:
+                if submit_answer(current_day, answer=answer, part=part):
+                    print("\t  Star: 🌟")
+                else:
+                    print("\t  Star: ❌")
+
+            break

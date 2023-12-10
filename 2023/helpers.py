@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 import shutil
 import stat
@@ -6,6 +7,9 @@ from pathlib import Path
 from time import perf_counter
 
 import requests
+
+_session = requests.Session()
+_session.cookies.set("session", os.environ["AOC_SESSION_COOKIE_DATA"])
 
 
 def get_input_filepath(day):
@@ -31,14 +35,49 @@ def download_input_data(day):
     if os.path.exists(filename):
         return
 
-    s = requests.Session()
-    s.cookies.set("session", os.environ["AOC_SESSION_COOKIE_DATA"])
-
-    resp = s.get(f"https://adventofcode.com/{get_current_year()}/day/{day}/input")
+    resp = _session.get(f"https://adventofcode.com/{get_current_year()}/day/{day}/input")
     resp.raise_for_status()
 
     with open(filename, "w") as outfile:
         outfile.write(resp.text)
+
+
+def submit_answer(day: int, answer: int, part: int) -> bool:
+    if has_star(day=day, part=part):
+        return True
+
+    resp = _session.post(
+        f"https://adventofcode.com/{get_current_year()}/day/{day}/answer", data={"level": part, "answer": str(answer)}
+    )
+
+    if "That's the right answer!" in resp.text:
+        set_star(day=day, part=part)
+        return True
+
+    return False
+
+
+def make_star_record():
+    if not os.path.exists("stars.json"):
+        with open("stars.json", "w") as starfile:
+            starfile.write(json.dumps({day: ["-", "-"] for day in range(1, 26)}, indent=2) + "\n")
+
+
+def has_star(day: int, part: int):
+    with open("stars.json") as starfile:
+        star_record = json.load(starfile)
+
+    return star_record[str(day)][part - 1] == "*"
+
+
+def set_star(day: int, part: int):
+    with open("stars.json") as starfile:
+        star_record = json.load(starfile)
+
+    star_record[str(day)][part - 1] = "*"
+
+    with open("stars.json", "w") as starfile:
+        starfile.write(json.dumps(star_record, indent=2) + "\n")
 
 
 def make_day(day: str | int):
