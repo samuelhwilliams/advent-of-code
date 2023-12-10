@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from typing import Union
+import dataclasses
+from typing import Optional
 from collections import Counter
 
 from rich import print
@@ -7,32 +8,37 @@ from rich import print
 from helpers import load_input
 
 
-def parse_file_contents(file_contents: str) -> list[list[Union[str, int]]]:
-    data = [[c for c in line] for line in file_contents.strip().splitlines()]
+@dataclasses.dataclass
+class Node:
+    char: str
+    depth: Optional[int] = None
+
+
+def parse_file_contents(file_contents: str) -> list[list[Node]]:
+    data = [[Node(c) for c in line] for line in file_contents.strip().splitlines()]
     for row in data:
-        row.insert(0, ".")
-        row.append(".")
+        row.insert(0, Node("."))
+        row.append(Node("."))
     width = len(data[0])
-    data.insert(0, ["."] * width)
-    data.append(["."] * width)
-    # print(data)
+    data.insert(0, [Node(".") for _ in range(width)])
+    data.append([Node(".") for _ in range(width)])
     return data
 
 
 def get_starting_coord(grid):
     for x in range(len(grid)):
         for y in range(len(grid)):
-            if grid[x][y] == "S":
+            if grid[x][y].char == "S":
                 return x, y
 
 
-def find_max_depth(grid: list[list[Union[str, int]]], queue: list[tuple[tuple[int, int], int]]) -> int:
+def find_max_depth(grid: list[list[Node]], queue: list[tuple[tuple[int, int], int]]) -> int:
     i = 0
     loops = set()
     while i < len(queue):
         coord, depth = queue[i]
 
-        if isinstance(grid[coord[0]][coord[1]], int):
+        if isinstance(grid[coord[0]][coord[1]].depth, int):
             i += 1
             continue
 
@@ -43,28 +49,28 @@ def find_max_depth(grid: list[list[Union[str, int]]], queue: list[tuple[tuple[in
             grid[coord[0]][coord[1] + 1],
             grid[coord[0] + 1][coord[1]],
         )
-        if above in {"|", "F", "7"} and self in {"S", "|", "J", "L"}:
+        if above.char in {"|", "F", "7"} and self.char in {"S", "|", "J", "L"}:
             queue.append(((coord[0] - 1, coord[1]), depth + 1))
-            grid[coord[0]][coord[1]] = depth
-        if left in {"-", "F", "L"} and self in {"S", "-", "J", "7"}:
+            grid[coord[0]][coord[1]].depth = depth
+        if left.char in {"-", "F", "L"} and self.char in {"S", "-", "J", "7"}:
             queue.append(((coord[0], coord[1] - 1), depth + 1))
-            grid[coord[0]][coord[1]] = depth
-        if right in {"-", "J", "7"} and self in {"S", "-", "F", "L"}:
+            grid[coord[0]][coord[1]].depth = depth
+        if right.char in {"-", "J", "7"} and self.char in {"S", "-", "F", "L"}:
             queue.append(((coord[0], coord[1] + 1), depth + 1))
-            grid[coord[0]][coord[1]] = depth
-        if below in {"|", "L", "J"} and self in {"S", "|", "F", "7"}:
+            grid[coord[0]][coord[1]].depth = depth
+        if below.char in {"|", "L", "J"} and self.char in {"S", "|", "F", "7"}:
             queue.append(((coord[0] + 1, coord[1]), depth + 1))
-            grid[coord[0]][coord[1]] = depth
+            grid[coord[0]][coord[1]].depth = depth
 
-        c = Counter(filter(lambda x: isinstance(x, int), [above, left, right, below]))
+        c = Counter(filter(lambda x: isinstance(x, int), [above.depth, left.depth, right.depth, below.depth]))
         mc = c.most_common(1)
         if mc and mc[0][1] == 2:
             loops.add(depth)
 
         i += 1
 
-    with open("map.txt", "w") as outfile:
-        outfile.write("\n".join([",".join([str(x) for x in line]) for line in grid]))
+    # with open("map.txt", "w") as outfile:
+    #     outfile.write("\n".join([",".join([x.char if x.depth is not None else "." for x in line]) for line in grid]))
 
     return max(loops)
 
