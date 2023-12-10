@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import dataclasses
+from itertools import combinations
 from typing import Optional
-from collections import Counter
 
 from rich import print
 
@@ -62,9 +62,7 @@ def find_max_depth(grid: list[list[Node]], queue: list[tuple[tuple[int, int], in
             queue.append(((coord[0] + 1, coord[1]), depth + 1))
             grid[coord[0]][coord[1]].depth = depth
 
-        c = Counter(filter(lambda x: isinstance(x, int), [above.depth, left.depth, right.depth, below.depth]))
-        mc = c.most_common(1)
-        if mc and mc[0][1] == 2:
+        if any(x == y for x, y in combinations([above, left, right, below], 2)):
             loops.add(depth)
 
         i += 1
@@ -104,6 +102,10 @@ LJ...
 
 def test_part1():
     assert part1(test_data) == 8
+
+
+def test_part1_real():
+    assert part1(load_input(__file__)) == 6942
 
 
 def test_part2():
