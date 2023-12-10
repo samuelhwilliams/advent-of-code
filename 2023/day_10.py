@@ -26,6 +26,36 @@ class Node:
         return self.depth is not None
 
 
+def print_grid(grid: list[list[Node]], max_depth: int = 10_000, cur_coord: Optional[tuple[int, int]] = None):
+    for x, row in enumerate(grid):
+        for y, node in enumerate(row):
+            if node.depth is not None:
+                gradient = min(128, node.depth * 128 // max_depth)
+                if cur_coord and cur_coord == (x, y):
+                    style = Style(color="white", bgcolor="green", blink=True, blink2=True)
+                elif node.walked:
+                    style = Style(bgcolor="yellow")
+                elif node.depth == max_depth or node.depth == 0:
+                    style = Style(color="black", bgcolor="yellow")
+                else:
+                    style = Style(color="white", bgcolor=f"rgb(128, 0, {gradient})")
+                console.print(str(node.char), end="", style=style)
+            else:
+                if cur_coord and cur_coord == (x, y):
+                    style = Style(color="green", bgcolor="green", blink=True, blink2=True)
+                else:
+                    style = Style(
+                        color="white",
+                        bgcolor="rgb(0, 255, 255)"
+                        if node.inside
+                        else "rgb(255, 0, 255)"
+                        if node.inside is not None
+                        else "#000000",
+                    )
+                console.print(" ", end="", style=style)
+        console.print("\n", end="")
+
+
 def parse_file_contents(file_contents: str) -> list[list[Node]]:
     data = [[Node(c) for c in line.strip()] for line in file_contents.strip().splitlines()]
     for row in data:
@@ -44,7 +74,7 @@ def get_starting_coord(grid):
                 return x, y
 
 
-def find_max_depth(grid: list[list[Node]], queue: list[tuple[tuple[int, int], int]]) -> int:
+def flood_fill_depths(grid: list[list[Node]], queue: list[tuple[tuple[int, int], int]]) -> int:
     i = 0
     loops = set()
     while i < len(queue):
@@ -85,37 +115,7 @@ def find_max_depth(grid: list[list[Node]], queue: list[tuple[tuple[int, int], in
 def part1(file_contents: str) -> int:
     grid = parse_file_contents(file_contents)
     coords = [(get_starting_coord(grid), 0)]
-    return find_max_depth(grid, coords)
-
-
-def print_grid(grid: list[list[Node]], max_depth: int = 10_000, cur_coord: Optional[tuple[int, int]] = None):
-    for x, row in enumerate(grid):
-        for y, node in enumerate(row):
-            if node.depth is not None:
-                gradient = min(128, node.depth * 128 // max_depth)
-                if cur_coord and cur_coord == (x, y):
-                    style = Style(color="white", bgcolor="green", blink=True, blink2=True)
-                elif node.walked:
-                    style = Style(bgcolor="yellow")
-                elif node.depth == max_depth or node.depth == 0:
-                    style = Style(color="black", bgcolor="yellow")
-                else:
-                    style = Style(color="white", bgcolor=f"rgb(128, 0, {gradient})")
-                console.print(str(node.char), end="", style=style)
-            else:
-                if cur_coord and cur_coord == (x, y):
-                    style = Style(color="green", bgcolor="green", blink=True, blink2=True)
-                else:
-                    style = Style(
-                        color="white",
-                        bgcolor="rgb(0, 255, 255)"
-                        if node.inside
-                        else "rgb(255, 0, 255)"
-                        if node.inside is not None
-                        else "#000000",
-                    )
-                console.print(" ", end="", style=style)
-        console.print("\n", end="")
+    return flood_fill_depths(grid, coords)
 
 
 class Direction(enum.Enum):
@@ -201,7 +201,6 @@ def mark_and_fill(grid, queue: list[tuple[int, int]], inside: bool) -> int:
 
         node.inside = inside
         marked += 1
-        # print_grid(grid, max_depth=1000, cur_coord=coord)
 
         for adjacent in [Direction.ABOVE, Direction.LEFT, Direction.RIGHT, Direction.BELOW]:
             adjacent_coord = get_adjacent_coord(coord, adjacent)
@@ -222,46 +221,42 @@ def mark_and_fill(grid, queue: list[tuple[int, int]], inside: bool) -> int:
 
 def mark_nodes_inside_or_outside(grid, coord: tuple[int, int], from_direction: Direction, inside_direction: Direction):
     queue = [get_adjacent_coord(coord, inside_direction)]
-    marked = mark_and_fill(grid, queue, inside=True)
+    mark_and_fill(grid, queue, inside=True)
 
     queue = [get_adjacent_coord(coord, inside_direction.opposite())]
-    marked += mark_and_fill(grid, queue, inside=False)
+    mark_and_fill(grid, queue, inside=False)
 
     node = get_node(grid, coord)
     if from_direction == Direction.LEFT:
         if node.char == "7":
             queue = [get_adjacent_coord(coord, Direction.ABOVE), get_adjacent_coord(coord, Direction.RIGHT)]
-            marked += mark_and_fill(grid, queue, inside=inside_direction != Direction.BELOW)
+            mark_and_fill(grid, queue, inside=inside_direction != Direction.BELOW)
         elif node.char == "J":
             queue = [get_adjacent_coord(coord, Direction.BELOW), get_adjacent_coord(coord, Direction.RIGHT)]
-            marked += mark_and_fill(grid, queue, inside=inside_direction != Direction.ABOVE)
+            mark_and_fill(grid, queue, inside=inside_direction != Direction.ABOVE)
     elif from_direction == Direction.RIGHT:
         if node.char == "F":
             queue = [get_adjacent_coord(coord, Direction.ABOVE), get_adjacent_coord(coord, Direction.LEFT)]
-            marked += mark_and_fill(grid, queue, inside=inside_direction != Direction.BELOW)
+            mark_and_fill(grid, queue, inside=inside_direction != Direction.BELOW)
         elif node.char == "L":
             queue = [get_adjacent_coord(coord, Direction.BELOW), get_adjacent_coord(coord, Direction.LEFT)]
-            marked += mark_and_fill(grid, queue, inside=inside_direction != Direction.ABOVE)
+            mark_and_fill(grid, queue, inside=inside_direction != Direction.ABOVE)
 
     elif from_direction == Direction.ABOVE:
         if node.char == "L":
             queue = [get_adjacent_coord(coord, Direction.BELOW), get_adjacent_coord(coord, Direction.LEFT)]
-            marked += mark_and_fill(grid, queue, inside=inside_direction != Direction.RIGHT)
+            mark_and_fill(grid, queue, inside=inside_direction != Direction.RIGHT)
         elif node.char == "J":
             queue = [get_adjacent_coord(coord, Direction.BELOW), get_adjacent_coord(coord, Direction.LEFT)]
-            marked += mark_and_fill(grid, queue, inside=inside_direction != Direction.LEFT)
+            mark_and_fill(grid, queue, inside=inside_direction != Direction.LEFT)
 
     elif from_direction == Direction.BELOW:
         if node.char == "F":
             queue = [get_adjacent_coord(coord, Direction.ABOVE), get_adjacent_coord(coord, Direction.LEFT)]
-            marked += mark_and_fill(grid, queue, inside=inside_direction != Direction.RIGHT)
+            mark_and_fill(grid, queue, inside=inside_direction != Direction.RIGHT)
         elif node.char == "7":
             queue = [get_adjacent_coord(coord, Direction.ABOVE), get_adjacent_coord(coord, Direction.LEFT)]
-            marked += mark_and_fill(grid, queue, inside=inside_direction != Direction.LEFT)
-
-    # if marked:
-    #     print_grid(grid, max_depth=1000, cur_coord=coord)
-    #     breakpoint()
+            mark_and_fill(grid, queue, inside=inside_direction != Direction.LEFT)
 
 
 def count_inside_tiles(grid, start: tuple[int, int], max_depth: int) -> int:
@@ -276,12 +271,8 @@ def count_inside_tiles(grid, start: tuple[int, int], max_depth: int) -> int:
         )
         i += 1
 
-    # print_grid(grid, max_depth)
+    print_grid(grid, max_depth=max_depth)
 
-    for x, row in enumerate(grid):
-        for y, node in enumerate(row):
-            if node.depth is None and node.inside is None:
-                print((x, y))
     return sum([1 if node.inside else 0 for row in grid for node in row])
 
 
@@ -314,9 +305,9 @@ def replace_start_with_pipe(grid: list[list[Node]]):
 
 
 def part2(file_contents: str) -> int:
-    grid = parse_file_contents(file_contents)  # noqa
+    grid = parse_file_contents(file_contents)
     coords = [(get_starting_coord(grid), 0)]
-    max_depth = find_max_depth(grid, coords)
+    max_depth = flood_fill_depths(grid, coords)
     replace_start_with_pipe(grid)
 
     for x in range(len(grid)):
@@ -333,7 +324,7 @@ if __name__ == "__main__":
     data = load_input(__file__)
     answer1 = part1(data)
     answer2 = part2(data)
-    console.print(f"The answer is: {answer1=}, {answer2=}")
+    print(f"The answer is: {answer1=}, {answer2=}")
 
 
 test_data = """
