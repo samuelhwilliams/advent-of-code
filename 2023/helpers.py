@@ -54,6 +54,9 @@ def submit_answer(day: int, answer: int, part: int) -> bool:
         set_star(day=day, part=part)
         return True
 
+    else:
+        print(resp.text)
+
     return False
 
 
