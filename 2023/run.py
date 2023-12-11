@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import webbrowser
 from contextlib import redirect_stdout
 import importlib
 import sys
@@ -58,6 +58,7 @@ if __name__ == "__main__":
             if submit.lower() in {"y", "yes"}:
                 if submit_answer(current_day, answer=answer, part=part):
                     print("\t  Star: 🌟")
+                    webbrowser.open(f"https://adventofcode.com/2023/day/{current_day}")
                 else:
                     print("\t  Star: ❌")
 
