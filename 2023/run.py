@@ -42,24 +42,23 @@ if __name__ == "__main__":
             retval = pytest.main([solution_filename, "-k", f"test_part{part}", "-vvvs"])
             sys.exit(part)
 
-        solution_module = importlib.import_module(solution_filename[:-3])
+        if part == 2 or has_star(current_day, 2):
+            solution_module = importlib.import_module(solution_filename[:-3])
 
-        with RecordTime() as rt:
-            answer = getattr(solution_module, f"part{part}")(data)
+            with RecordTime() as rt:
+                answer = getattr(solution_module, f"part{part}")(data)
 
-        print(
-            f"\tAnswer: {answer}",
-        )
-        print(f"\t  Took: {rt.time}")
+            print(
+                f"\tAnswer: {answer}",
+            )
+            print(f"\t  Took: {rt.time}")
 
-        if not has_star(current_day, part):
-            print("\n\t[bold]Submit?[/bold] ", end="")
-            submit = input()
-            if submit.lower() in {"y", "yes"}:
-                if submit_answer(current_day, answer=answer, part=part):
-                    print("\t  Star: 🌟")
-                    webbrowser.open(f"https://adventofcode.com/2023/day/{current_day}")
-                else:
-                    print("\t  Star: ❌")
-
-            break
+            if not has_star(current_day, part):
+                print("\n\t[bold]Submit?[/bold] ", end="")
+                submit = input()
+                if submit.lower() in {"y", "yes"}:
+                    if submit_answer(current_day, answer=answer, part=part):
+                        print("\t  Star: 🌟")
+                        webbrowser.open(f"https://adventofcode.com/2023/day/{current_day}")
+                    else:
+                        print("\t  Star: ❌")
