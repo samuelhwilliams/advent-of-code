@@ -42,7 +42,7 @@ if __name__ == "__main__":
             retval = pytest.main([solution_filename, "-k", f"test_part{part}", "-vvvs"])
             sys.exit(part)
 
-        if part == 2 or has_star(current_day, 2):
+        if (part == 1 and (not has_star(current_day, 1) or has_star(current_day, 2))) or part == 2:
             solution_module = importlib.import_module(solution_filename[:-3])
 
             with RecordTime() as rt:
@@ -62,3 +62,5 @@ if __name__ == "__main__":
                         webbrowser.open(f"https://adventofcode.com/2023/day/{current_day}")
                     else:
                         print("\t  Star: ❌")
+
+                break
