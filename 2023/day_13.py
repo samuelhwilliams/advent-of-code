@@ -10,19 +10,27 @@ def parse_file_contents(file_contents: str) -> list[list[list[str]]]:
     return [parse_grid(grid) for grid in file_contents.split("\n\n")]
 
 
-def check_grid_rows(grid):
+def count_differences(first, second):
+    return sum(1 for chars in zip(first, second) if chars[0] != chars[1])
+
+
+def check_grid_rows(grid, smudges=0):
     for i, pairs in enumerate(itertools.pairwise(grid)):
         r1, r2 = pairs
-        mirror_row_pairs = zip(grid[i - 1 :: -1] if i > 0 else [], grid[i + 2 : :])
-        if r1 == r2 and all(y1 == y2 for y1, y2 in mirror_row_pairs):
-            return (i + 1) * 100
+        pair_smudges = count_differences(r1, r2)
+        if pair_smudges in {0, 1}:
+            mirror_row_pairs = list(zip(grid[i - 1 :: -1] if i > 0 else [], grid[i + 2 : :]))
+            if sum(count_differences(y1, y2) for y1, y2 in mirror_row_pairs) == (smudges - pair_smudges):
+                return (i + 1) * 100
 
     transposed_grid = list(zip(*grid))
     for i, pairs in enumerate(itertools.pairwise(transposed_grid)):
         r1, r2 = pairs
-        mirror_row_pairs = zip(transposed_grid[i - 1 :: -1] if i > 0 else [], transposed_grid[i + 2 : :])
-        if r1 == r2 and all(y1 == y2 for y1, y2 in mirror_row_pairs):
-            return i + 1
+        pair_smudges = count_differences(r1, r2)
+        if pair_smudges in {0, 1}:
+            mirror_row_pairs = list(zip(transposed_grid[i - 1 :: -1] if i > 0 else [], transposed_grid[i + 2 : :]))
+            if sum(count_differences(y1, y2) for y1, y2 in mirror_row_pairs) == (smudges - pair_smudges):
+                return i + 1
 
 
 def part1(file_contents: str) -> int:
@@ -31,8 +39,8 @@ def part1(file_contents: str) -> int:
 
 
 def part2(file_contents: str) -> int:
-    parse_file_contents(file_contents)
-    return 0
+    grids = parse_file_contents(file_contents)
+    return sum(check_grid_rows(grid, smudges=1) for grid in grids)
 
 
 if __name__ == "__main__":
@@ -70,4 +78,8 @@ def test_part1_real():
 
 
 def test_part2():
-    assert part2(test_data) == 0
+    assert part2(test_data) == 400
+
+
+def test_part2_real():
+    assert part2(load_input(__file__)) == 37416
