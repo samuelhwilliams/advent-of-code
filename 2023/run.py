@@ -59,7 +59,7 @@ if __name__ == "__main__":
                 if submit.lower() in {"y", "yes"}:
                     if submit_answer(current_day, answer=answer, part=part):
                         print("\t  Star: 🌟")
-                        webbrowser.open(f"https://adventofcode.com/2023/day/{current_day}")
+                        webbrowser.open(f"https://adventofcode.com/2023/day/{current_day}{'#part2' if part==1 else ''}")
                     else:
                         print("\t  Star: ❌")
 
