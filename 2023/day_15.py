@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import re
 from functools import reduce
 from itertools import chain
 
@@ -23,8 +24,19 @@ def part1(file_contents: str) -> int:
 
 
 def part2(file_contents: str) -> int:
-    parse_file_contents(file_contents)
-    return 0
+    boxes = [{} for _ in range(256)]  # take advantage of modern python dicts being insertion-ordered
+    for step in parse_file_contents(file_contents):
+        label, focus = re.split(r"[-=]", step)
+        box = hash(label)
+        if label in boxes[box]:
+            if focus:
+                boxes[box][label] = int(focus)
+            else:
+                boxes[box].pop(label)
+        elif focus:
+            boxes[box][label] = int(focus)
+
+    return sum((b + 1) * (i + 1) * focus for b in range(len(boxes)) for i, focus in enumerate(boxes[b].values()))
 
 
 if __name__ == "__main__":
@@ -34,10 +46,9 @@ if __name__ == "__main__":
     print(f"The answer is: {answer1=}, {answer2=}")
 
 
-test_data = [("HASH", 52), ("rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7", 1320)]
-
-
-@pytest.mark.parametrize("data, expected_output", test_data)
+@pytest.mark.parametrize(
+    "data, expected_output", (("HASH", 52), ("rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7", 1320))
+)
 def test_part1(data, expected_output):
     assert part1(data) == expected_output
 
@@ -47,4 +58,8 @@ def test_part1_real():
 
 
 def test_part2():
-    assert part2(test_data) == 0
+    assert part2("rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7") == 145
+
+
+def test_part2_real():
+    assert part2(load_input(__file__)) == 296921
