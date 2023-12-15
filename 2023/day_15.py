@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import re
 from functools import reduce
 from itertools import chain
 
@@ -23,20 +22,30 @@ def part1(file_contents: str) -> int:
     return sum(hash(part) for part in parts)
 
 
-def part2(file_contents: str) -> int:
-    boxes = [{} for _ in range(256)]  # take advantage of modern python dicts being insertion-ordered
-    for step in parse_file_contents(file_contents):
-        label, focus = re.split(r"[-=]", step)
-        box = hash(label)
-        if label in boxes[box]:
-            if focus:
-                boxes[box][label] = int(focus)
-            else:
-                boxes[box].pop(label)
-        elif focus:
-            boxes[box][label] = int(focus)
+class Boxes:
+    def __init__(self, size=256):
+        self.size = size
+        self.slots = [{} for _ in range(size)]
 
-    return sum((b + 1) * (i + 1) * focus for b in range(len(boxes)) for i, focus in enumerate(boxes[b].values()))
+    def __setitem__(self, key, value):
+        self.slots[hash(key)][key] = int(value)
+
+    def __iter__(self):
+        # Takes advantage of the fact that modern python dicts have stable ordering on insertion
+        yield from ((i, j, slot[label]) for i, slot in enumerate(self.slots) for j, label in enumerate(slot))
+
+    def pop(self, key):
+        self.slots[hash(key)].pop(key, None)
+
+
+def part2(file_contents: str) -> int:
+    boxes = Boxes()
+    for step in parse_file_contents(file_contents):
+        if step[-1] == "-":
+            boxes.pop(step[:-1])
+        else:
+            boxes[step[:-2]] = step[-1]
+    return sum((box + 1) * (slot + 1) * focus for box, slot, focus in boxes)
 
 
 if __name__ == "__main__":
