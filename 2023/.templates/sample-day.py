@@ -11,20 +11,18 @@ def parse_file_contents(file_contents: str) -> list[str]:
     return data
 
 
-def part1(file_contents: str) -> int:
-    parse_file_contents(file_contents)
+def part1(data: list[str]) -> int:
     return 0
 
 
-def part2(file_contents: str) -> int:
-    parse_file_contents(file_contents)
+def part2(data: list[str]) -> int:
     return 0
 
 
 if __name__ == "__main__":
-    data = load_input(__file__)
-    answer1 = part1(data)
-    answer2 = part2(data)
+    INPUT = parse_file_contents(load_input(__file__))
+    answer1 = part1(INPUT)
+    answer2 = part2(INPUT)
     print(f"The answer is: {answer1=}, {answer2=}")
 
 
@@ -33,8 +31,16 @@ test_data = """
 
 
 def test_part1():
-    assert part1(test_data) == 0
+    assert part1(parse_file_contents(test_data)) == 0
+
+
+# def test_part1_real():
+#     assert part1(parse_file_contents(load_input(__file__))) == 0
 
 
 def test_part2():
-    assert part2(test_data) == 0
+    assert part2(parse_file_contents(test_data)) == 0
+
+
+# def test_part2_real():
+#     assert part2(parse_file_contents(load_input(__file__))) == 0
