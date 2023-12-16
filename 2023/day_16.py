@@ -23,24 +23,10 @@ WEST = (0, -1)
 EAST = (0, 1)
 
 
-def to_char(t):
-    if t is NORTH:
-        return "^"
-    elif t is SOUTH:
-        return "v"
-    elif t is WEST:
-        return "<"
-    else:
-        return ">"
-
-
 @dataclasses.dataclass
 class Coord:
     x: int = 0
     y: int = 0
-
-    def copy(self):
-        return Coord(self.x, self.y)
 
     def __add__(self, other):
         if isinstance(other, tuple):
