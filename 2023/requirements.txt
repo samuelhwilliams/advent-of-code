@@ -2,6 +2,7 @@
 requests==2.31.0
 rich==13.7.0
 frozendict==2.3.10
+ordered-set==4.1.0
 
 # Linting/formatting/testing
 black==23.10.1

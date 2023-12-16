@@ -5,7 +5,7 @@ import shutil
 import stat
 from pathlib import Path
 from time import perf_counter
-from typing import Optional
+from typing import Optional, Any
 
 import requests
 
@@ -105,11 +105,13 @@ class RecordTime:
         self.time = f"{t:.3f}ms"
 
 
-def parse_grid(data: str, pad_edges: Optional[str] = None) -> list[list[str]]:
-    grid = [[char for char in line.strip()] for line in data.strip().splitlines()]
+def parse_grid(data: str, pad_edges: Optional[str] = None, tile_class=str) -> list[list[Any]]:
+    grid = [[tile_class(char) for char in line.strip()] for line in data.strip().splitlines()]
+
     if pad_edges is not None:
         for i in range(len(grid)):
-            grid[i] = [pad_edges] + grid[i] + [pad_edges]
-        grid.insert(0, [pad_edges] * len(grid[0]))
-        grid.append([pad_edges] * len(grid[0]))
+            grid[i] = [tile_class(pad_edges)] + grid[i] + [tile_class(pad_edges)]
+        grid.insert(0, [tile_class(pad_edges)] * len(grid[0]))
+        grid.append([tile_class(pad_edges)] * len(grid[0]))
+
     return grid
