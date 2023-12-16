@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import dataclasses
-import enum
 import itertools
 
 from ordered_set import OrderedSet
@@ -12,28 +11,27 @@ from helpers import load_input, parse_grid
 @dataclasses.dataclass
 class Node:
     char: str
-    beams: OrderedSet["Direction"] = dataclasses.field(default_factory=OrderedSet)
+    beams: OrderedSet[tuple[int, int]] = dataclasses.field(default_factory=OrderedSet)
 
     def reset(self):
         self.beams = OrderedSet()
 
 
-class Direction(enum.Enum):
-    NORTH = (-1, 0)
-    SOUTH = (1, 0)
-    WEST = (0, -1)
-    EAST = (0, 1)
+NORTH = (-1, 0)
+SOUTH = (1, 0)
+WEST = (0, -1)
+EAST = (0, 1)
 
-    @property
-    def char(self):
-        if self is Direction.NORTH:
-            return "^"
-        elif self is Direction.SOUTH:
-            return "v"
-        elif self is Direction.WEST:
-            return "<"
-        else:
-            return ">"
+
+def to_char(t):
+    if t is NORTH:
+        return "^"
+    elif t is SOUTH:
+        return "v"
+    elif t is WEST:
+        return "<"
+    else:
+        return ">"
 
 
 @dataclasses.dataclass
@@ -45,32 +43,32 @@ class Coord:
         return Coord(self.x, self.y)
 
     def __add__(self, other):
-        if isinstance(other, Direction):
-            return Coord(self.x + other.value[0], self.y + other.value[1])
+        if isinstance(other, tuple):
+            return Coord(self.x + other[0], self.y + other[1])
         return Coord(self.x + other.x, self.y + other.y)
 
 
 @dataclasses.dataclass
 class BeamTip:
     coord: Coord
-    direction: Direction
+    direction: tuple
 
     def move(self):
-        self.coord.x += self.direction.value[0]
-        self.coord.y += self.direction.value[1]
+        self.coord.x += self.direction[0]
+        self.coord.y += self.direction[1]
 
     def flip(self, char):
         if char not in "\\/":
             return
 
-        if self.direction is Direction.EAST:
-            self.direction = Direction.NORTH if char == "/" else Direction.SOUTH
-        elif self.direction is Direction.WEST:
-            self.direction = Direction.NORTH if char == "\\" else Direction.SOUTH
-        elif self.direction is Direction.NORTH:
-            self.direction = Direction.EAST if char == "/" else Direction.WEST
+        if self.direction is EAST:
+            self.direction = NORTH if char == "/" else SOUTH
+        elif self.direction is WEST:
+            self.direction = NORTH if char == "\\" else SOUTH
+        elif self.direction is NORTH:
+            self.direction = EAST if char == "/" else WEST
         else:
-            self.direction = Direction.EAST if char == "\\" else Direction.WEST
+            self.direction = EAST if char == "\\" else WEST
 
 
 def parse_file_contents(file_contents: str) -> list[list[Node]]:
@@ -96,12 +94,12 @@ def energise_grid(grid, beams):
 
         tile.beams.add(beams[0].direction)
         match tile.char:
-            case "|" if beams[0].direction.value[0] == 0:
-                beams[0].direction = Direction.NORTH
-                beams.append(BeamTip(beams[0].coord + Direction.SOUTH, Direction.SOUTH))
-            case "-" if beams[0].direction.value[1] == 0:
-                beams[0].direction = Direction.WEST
-                beams.append(BeamTip(beams[0].coord + Direction.EAST, Direction.EAST))
+            case "|" if beams[0].direction[0] == 0:
+                beams[0].direction = NORTH
+                beams.append(BeamTip(beams[0].coord + SOUTH, SOUTH))
+            case "-" if beams[0].direction[1] == 0:
+                beams[0].direction = WEST
+                beams.append(BeamTip(beams[0].coord + EAST, EAST))
             case "/" | "\\":
                 beams[0].flip(tile.char)
 
@@ -112,7 +110,7 @@ def energise_grid(grid, beams):
 
 def part1(file_contents: str) -> int:
     grid = parse_file_contents(file_contents)
-    return energise_grid(grid, [BeamTip(Coord(x=0, y=0), Direction.EAST)])
+    return energise_grid(grid, [BeamTip(Coord(x=0, y=0), EAST)])
 
 
 def reset_grid(grid):
@@ -125,10 +123,10 @@ def part2(file_contents: str) -> int:
     max_energy = 0
     grid = parse_file_contents(file_contents)
     for x, y, direction in itertools.chain(
-        itertools.product(range(len(grid)), [0], [Direction.EAST]),
-        itertools.product(range(len(grid)), [len(grid[0]) - 1], [Direction.WEST]),
-        itertools.product([0], range(len(grid[0])), [Direction.SOUTH]),
-        itertools.product([len(grid) - 1], range(len(grid[0])), [Direction.NORTH]),
+        itertools.product(range(len(grid)), [0], [EAST]),
+        itertools.product(range(len(grid)), [len(grid[0]) - 1], [WEST]),
+        itertools.product([0], range(len(grid[0])), [SOUTH]),
+        itertools.product([len(grid) - 1], range(len(grid[0])), [NORTH]),
     ):
         beams = [BeamTip(Coord(x=x, y=y), direction)]
         max_energy = max(max_energy, energise_grid(grid, beams))
