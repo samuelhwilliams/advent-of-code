@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import dataclasses
 import enum
+import itertools
 
 from ordered_set import OrderedSet
 from rich import print
@@ -22,6 +23,9 @@ class Node:
 
     def __repr__(self):
         return self.__str__()
+
+    def reset(self):
+        self.beams = OrderedSet()
 
 
 class Direction(enum.Enum):
@@ -79,10 +83,20 @@ def parse_file_contents(file_contents: str) -> list[list[Node]]:
     return grid
 
 
-def part1(file_contents: str) -> int:
-    grid = parse_file_contents(file_contents)
-    print(grid)
-    beams = [BeamTip(Coord(), Direction.EAST)]
+def print_grid(grid, beams=None):
+    print("\n\n\n\n\n")
+    beam_coords = {(bt.coord.x, bt.coord.y) for bt in beams}
+    print(
+        "\n".join(
+            [
+                "".join("X" if (x, y) in beam_coords else str(grid[x][y]) for y in range(len(grid[0])))
+                for x in range(len(grid))
+            ]
+        )
+    )
+
+
+def energise_grid(grid, beams):
     while beams:
         if (
             beams[0].coord.x < 0
@@ -92,10 +106,12 @@ def part1(file_contents: str) -> int:
         ):
             beams.pop(0)
             continue
+
         tile = grid[beams[0].coord.x][beams[0].coord.y]
         if beams[0].direction in tile.beams:
             beams.pop(0)
             continue
+
         tile.beams.add(beams[0].direction)
         if tile.char == "|" and beams[0].direction in {Direction.EAST, Direction.WEST}:
             beams[0].direction = Direction.NORTH
@@ -111,11 +127,36 @@ def part1(file_contents: str) -> int:
             beams[0].flip(tile.char)
 
         beams[0].move()
+
     return sum(1 for x in range(len(grid)) for y in range(len(grid[0])) if grid[x][y].beams)
 
 
+def part1(file_contents: str) -> int:
+    grid = parse_file_contents(file_contents)
+    beams = [BeamTip(Coord(), Direction.EAST)]
+    return energise_grid(grid, beams)
+
+
+def reset_grid(grid):
+    for x in range(len(grid)):
+        for y in range(len(grid[0])):
+            grid[x][y].reset()
+
+
 def part2(file_contents: str) -> int:
-    return 0
+    max_energy = 0
+    grid = parse_file_contents(file_contents)
+    for x, y, direction in itertools.chain(
+        itertools.product(range(len(grid)), [0], [Direction.EAST]),
+        itertools.product(range(len(grid)), [len(grid[0]) - 1], [Direction.WEST]),
+        itertools.product([0], range(len(grid[0])), [Direction.SOUTH]),
+        itertools.product([len(grid) - 1], range(len(grid[0])), [Direction.NORTH]),
+    ):
+        beams = [BeamTip(Coord(x=x, y=y), direction)]
+        max_energy = max(max_energy, energise_grid(grid, beams))
+        reset_grid(grid)
+
+    return max_energy
 
 
 if __name__ == "__main__":
@@ -147,8 +188,8 @@ def test_part1_real():
 
 
 def test_part2():
-    assert part2(test_data) == 0
+    assert part2(test_data) == 51
 
 
-# def test_part2_real():
-#     assert part2(load_input(__file__)) == 0
+def test_part2_real():
+    assert part2(load_input(__file__)) == 8444
