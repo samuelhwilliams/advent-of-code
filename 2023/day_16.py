@@ -1,20 +1,9 @@
 #!/usr/bin/env python3
-import dataclasses
 import itertools
 
-from ordered_set import OrderedSet
 from rich import print
 
-from helpers import load_input, parse_grid
-
-
-@dataclasses.dataclass
-class Node:
-    char: str
-    beams: OrderedSet[tuple[int, int]] = dataclasses.field(default_factory=OrderedSet)
-
-    def reset(self):
-        self.beams = OrderedSet()
+from helpers import load_input
 
 
 NORTH = (-1, 0)
@@ -23,88 +12,71 @@ WEST = (0, -1)
 EAST = (0, 1)
 
 
-@dataclasses.dataclass
-class BeamTip:
-    coord: tuple
-    direction: tuple
+def flip(direction, char):
+    if char not in "\\/":
+        raise NotImplementedError
 
-    def move(self):
-        return BeamTip((self.coord[0] + self.direction[0], self.coord[1] + self.direction[1]), self.direction)
+    if direction is EAST:
+        return NORTH if char == "/" else SOUTH
+    elif direction is WEST:
+        return NORTH if char == "\\" else SOUTH
+    elif direction is NORTH:
+        return EAST if char == "/" else WEST
+    else:
+        return EAST if char == "\\" else WEST
 
-    def flip(self, char):
-        if char not in "\\/":
-            return
-
-        if self.direction is EAST:
-            self.direction = NORTH if char == "/" else SOUTH
-        elif self.direction is WEST:
-            self.direction = NORTH if char == "\\" else SOUTH
-        elif self.direction is NORTH:
-            self.direction = EAST if char == "/" else WEST
-        else:
-            self.direction = EAST if char == "\\" else WEST
-
-
-def parse_file_contents(file_contents: str) -> list[list[Node]]:
-    grid = parse_grid(file_contents, tile_class=Node)
-    return grid
+    raise NotImplementedError
 
 
 def energise_grid(grid, beams):
+    visited = set()
     while beams:
-        if (
-            beams[0].coord[0] < 0
-            or beams[0].coord[0] >= len(grid)
-            or beams[0].coord[1] < 0
-            or beams[0].coord[1] >= len(grid[0])
-        ):
+        coord, direction = beams[0]
+        new_direction = direction
+
+        if coord not in grid:
             beams.pop(0)
             continue
 
-        tile = grid[beams[0].coord[0]][beams[0].coord[1]]
-        if beams[0].direction in tile.beams:
+        if (coord, direction) in visited:
             beams.pop(0)
             continue
 
-        tile.beams.add(beams[0].direction)
-        match tile.char:
-            case "|" if beams[0].direction[0] == 0:
-                beams[0].direction = NORTH
-                beams.append(BeamTip(beams[0].coord + SOUTH, SOUTH))
-            case "-" if beams[0].direction[1] == 0:
-                beams[0].direction = WEST
-                beams.append(BeamTip(beams[0].coord + EAST, EAST))
+        visited.add((coord, direction))
+        match grid[coord]:
+            case "|" if direction[0] == 0:
+                new_direction = NORTH
+                beams.append(((beams[0][0][0] + SOUTH[0], beams[0][0][1] + SOUTH[1]), SOUTH))
+            case "-" if direction[1] == 0:
+                new_direction = WEST
+                beams.append(((beams[0][0][0] + EAST[0], beams[0][0][1] + EAST[1]), EAST))
             case "/" | "\\":
-                beams[0].flip(tile.char)
+                new_direction = flip(direction, grid[coord])
 
-        beams[0] = beams[0].move()
+        beams[0] = ((coord[0] + new_direction[0], coord[1] + new_direction[1]), new_direction)
 
-    return sum(1 for x in range(len(grid)) for y in range(len(grid[0])) if grid[x][y].beams)
+    return len(set(coord for coord, direction in visited))
 
 
 def part1(file_contents: str) -> int:
-    grid = parse_file_contents(file_contents)
-    return energise_grid(grid, [BeamTip((0, 0), EAST)])
-
-
-def reset_grid(grid):
-    for x in range(len(grid)):
-        for y in range(len(grid[0])):
-            grid[x][y].reset()
+    lines = file_contents.strip().splitlines()
+    grid = {(x, y): c for x, line in enumerate(lines) for y, c in enumerate(line)}
+    return energise_grid(grid, [((0, 0), EAST)])
 
 
 def part2(file_contents: str) -> int:
     max_energy = 0
-    grid = parse_file_contents(file_contents)
+    lines = file_contents.strip().splitlines()
+    m, n = len(lines), len(lines[0])
+    grid = {(x, y): c for x, line in enumerate(lines) for y, c in enumerate(line)}
+
     for x, y, direction in itertools.chain(
-        itertools.product(range(len(grid)), [0], [EAST]),
-        itertools.product(range(len(grid)), [len(grid[0]) - 1], [WEST]),
-        itertools.product([0], range(len(grid[0])), [SOUTH]),
-        itertools.product([len(grid) - 1], range(len(grid[0])), [NORTH]),
+        itertools.product(range(m), [0], [EAST]),
+        itertools.product(range(m), [n - 1], [WEST]),
+        itertools.product([0], range(n), [SOUTH]),
+        itertools.product([m - 1], range(n), [NORTH]),
     ):
-        beams = [BeamTip((x, y), direction)]
-        max_energy = max(max_energy, energise_grid(grid, beams))
-        reset_grid(grid)
+        max_energy = max(max_energy, energise_grid(grid, [((x, y), direction)]))
 
     return max_energy
 
