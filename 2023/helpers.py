@@ -85,7 +85,7 @@ def set_star(day: int, part: int):
 
 
 def make_day(day: str | int):
-    fname = f"day_{day}.py"
+    fname = f"day_{day:02}.py"
     if os.path.exists(fname):
         return
 
