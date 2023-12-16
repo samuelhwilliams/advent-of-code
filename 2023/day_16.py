@@ -12,22 +12,6 @@ WEST = (0, -1)
 EAST = (0, 1)
 
 
-def flip(direction, char):
-    if char not in "\\/":
-        raise NotImplementedError
-
-    if direction is EAST:
-        return NORTH if char == "/" else SOUTH
-    elif direction is WEST:
-        return NORTH if char == "\\" else SOUTH
-    elif direction is NORTH:
-        return EAST if char == "/" else WEST
-    else:
-        return EAST if char == "\\" else WEST
-
-    raise NotImplementedError
-
-
 def energise_grid(grid, beams):
     visited = set()
     while beams:
@@ -50,8 +34,10 @@ def energise_grid(grid, beams):
             case "-" if direction[1] == 0:
                 new_direction = WEST
                 beams.append(((beams[0][0][0] + EAST[0], beams[0][0][1] + EAST[1]), EAST))
-            case "/" | "\\":
-                new_direction = flip(direction, grid[coord])
+            case "/":
+                new_direction = (-direction[1], -direction[0])
+            case "\\":
+                new_direction = (direction[1], direction[0])
 
         beams[0] = ((coord[0] + new_direction[0], coord[1] + new_direction[1]), new_direction)
 
