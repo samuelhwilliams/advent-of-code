@@ -24,24 +24,12 @@ EAST = (0, 1)
 
 
 @dataclasses.dataclass
-class Coord:
-    x: int = 0
-    y: int = 0
-
-    def __add__(self, other):
-        if isinstance(other, tuple):
-            return Coord(self.x + other[0], self.y + other[1])
-        return Coord(self.x + other.x, self.y + other.y)
-
-
-@dataclasses.dataclass
 class BeamTip:
-    coord: Coord
+    coord: tuple
     direction: tuple
 
     def move(self):
-        self.coord.x += self.direction[0]
-        self.coord.y += self.direction[1]
+        return BeamTip((self.coord[0] + self.direction[0], self.coord[1] + self.direction[1]), self.direction)
 
     def flip(self, char):
         if char not in "\\/":
@@ -65,15 +53,15 @@ def parse_file_contents(file_contents: str) -> list[list[Node]]:
 def energise_grid(grid, beams):
     while beams:
         if (
-            beams[0].coord.x < 0
-            or beams[0].coord.x >= len(grid)
-            or beams[0].coord.y < 0
-            or beams[0].coord.y >= len(grid[0])
+            beams[0].coord[0] < 0
+            or beams[0].coord[0] >= len(grid)
+            or beams[0].coord[1] < 0
+            or beams[0].coord[1] >= len(grid[0])
         ):
             beams.pop(0)
             continue
 
-        tile = grid[beams[0].coord.x][beams[0].coord.y]
+        tile = grid[beams[0].coord[0]][beams[0].coord[1]]
         if beams[0].direction in tile.beams:
             beams.pop(0)
             continue
@@ -89,14 +77,14 @@ def energise_grid(grid, beams):
             case "/" | "\\":
                 beams[0].flip(tile.char)
 
-        beams[0].move()
+        beams[0] = beams[0].move()
 
     return sum(1 for x in range(len(grid)) for y in range(len(grid[0])) if grid[x][y].beams)
 
 
 def part1(file_contents: str) -> int:
     grid = parse_file_contents(file_contents)
-    return energise_grid(grid, [BeamTip(Coord(x=0, y=0), EAST)])
+    return energise_grid(grid, [BeamTip((0, 0), EAST)])
 
 
 def reset_grid(grid):
@@ -114,7 +102,7 @@ def part2(file_contents: str) -> int:
         itertools.product([0], range(len(grid[0])), [SOUTH]),
         itertools.product([len(grid) - 1], range(len(grid[0])), [NORTH]),
     ):
-        beams = [BeamTip(Coord(x=x, y=y), direction)]
+        beams = [BeamTip((x, y), direction)]
         max_energy = max(max_energy, energise_grid(grid, beams))
         reset_grid(grid)
 
