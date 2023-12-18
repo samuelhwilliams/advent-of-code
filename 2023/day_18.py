@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import re
 
 from rich import print
 
@@ -12,70 +12,59 @@ D = t((1, 0))
 L = t((0, -1))
 R = t((0, 1))
 
+DIRMAP = {"0": R, "1": D, "2": L, "3": U}
+
 
 def parse_file_contents(file_contents: str):
     for line in file_contents.strip().splitlines():
         direction, distance, colour = line.strip().split(" ")
-        yield direction, int(distance), colour[1:-1]
+        yield globals()[direction], int(distance), colour[1:-1]
 
 
-def print_grid(grid):
-    print()
-    print("\n".join(["".join(c for c in grid[x]) for x in range(len(grid))]))
+def segments(p):
+    return zip(p, p[1:] + [p[0]])
 
 
-def has_boundary_below(grid, coord):
-    below = coord + D
-    if below[0] < len(grid):
-        return grid[below[0]][below[1]] == "#"
-    return False
+def shoelace_formula_area(p):
+    return 0.5 * abs(sum(x0 * y1 - x1 * y0 for ((x0, y0), (x1, y1)) in segments(p)))
+
+
+def picks_theorem_area(coords, circumference_length):
+    return int(shoelace_formula_area(coords) + (circumference_length // 2) + 1)
 
 
 def part1(file_contents: str) -> int:
     coord = t((0, 0))
-    min_x, max_x, min_y, max_y = 0, 0, 0, 0
-    # Work out size of grid
+    coords = [(0, 0)]
+    circumference_length = 0
+
+    # Get coord points of all vertices
     for direction, distance, colour in parse_file_contents(file_contents):
-        coord += globals()[direction] * distance
-        min_x, max_x, min_y, max_y = (
-            min(min_x, coord[0]),
-            max(max_x, coord[0]),
-            min(min_y, coord[1]),
-            max(max_y, coord[1]),
-        )
-    start_x, start_y = -min_x, -min_y
-    max_x += -min_x
-    max_y += -min_y
-    grid = [["." for y in range(max_y + 1)] for x in range(max_x + 1)]
-    grid[start_x][start_y] = "#"
-    coord = t((start_x, start_y))
-    # Draw boundary walls
-    for direction, distance, colour in parse_file_contents(file_contents):
-        for _ in range(distance):
-            coord += globals()[direction]
-            grid[coord[0]][coord[1]] = "#"
+        coord += direction * distance
+        coords.append(coord)
+        circumference_length += distance
 
-    # Fill inside of boundary walls
-    for x in range(len(grid)):
-        inside = False
+    return picks_theorem_area(coords, circumference_length)
 
-        for y in range(len(grid[x])):
-            if grid[x][y] == "#":
-                if has_boundary_below(grid, t((x, y))):
-                    inside = not inside
-            else:
-                if inside:
-                    grid[x][y] = "#"
 
-    print_grid(grid)
-
-    # Count '#' tiles
-    return sum(1 for x in range(len(grid)) for y in range(len(grid[x])) if grid[x][y] == "#")
+def parse_file_contents_part2(file_contents: str):
+    for line in file_contents.strip().splitlines():
+        hexpart = re.search("\(\#(.{6})\)", line).group(1)
+        yield DIRMAP[hexpart[5]], int(hexpart[:5], 16)
 
 
 def part2(file_contents: str) -> int:
-    data = parse_file_contents(file_contents)  # noqa
-    return 0
+    coord = t((0, 0))
+    coords = [(0, 0)]
+    circumference_length = 0
+
+    # Get coord points of all vertices
+    for direction, distance in parse_file_contents_part2(file_contents):
+        coord += direction * distance
+        coords.append(coord)
+        circumference_length += distance
+
+    return picks_theorem_area(coords, circumference_length)
 
 
 if __name__ == "__main__":
@@ -111,8 +100,8 @@ def test_part1_real():
 
 
 def test_part2():
-    assert part2(test_data) == 0
+    assert part2(test_data) == 952408144115
 
 
-# def test_part2_real():
-#     assert part2(load_input(__file__)) == 0
+def test_part2_real():
+    assert part2(load_input(__file__)) == 147839570293376
