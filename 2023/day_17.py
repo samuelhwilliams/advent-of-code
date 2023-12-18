@@ -13,9 +13,8 @@ W = t((0, -1))
 E = t((0, 1))
 
 
-def parse_file_contents(file_contents: str) -> list[str]:
-    data = file_contents.splitlines()
-    return data
+def make_grid(file_contents: str):
+    return {t((x, y)): int(c) for x, line in enumerate(file_contents.strip().splitlines()) for y, c in enumerate(line)}
 
 
 def make_queue(queue, min_length):
@@ -24,13 +23,12 @@ def make_queue(queue, min_length):
     return queue
 
 
-def part1(file_contents: str) -> int:
-    grid = {t((x, y)): int(c) for x, line in enumerate(file_contents.strip().splitlines()) for y, c in enumerate(line)}
+def explore_grid(grid, min_steps, max_steps):
     start, end = min(grid), max(grid)
+    distance = -1
     queue = make_queue([], 10)
     # Queue items are tuples of (coord, from_direction, stride)
     queue[0].append((start, None, 1))
-    distance = -1
     visited = {}
     while True:
         distance += 1
@@ -51,10 +49,12 @@ def part1(file_contents: str) -> int:
             for next_direction in next_directions:
                 next_coord = coord
                 next_distance = distance
-                for steps in range(1, 4):
+                for steps in range(1, max_steps + 1):
                     next_coord += next_direction
                     if next_coord in grid:
                         next_distance += grid[next_coord]
+                        if steps < min_steps:
+                            continue
                         next_item = (next_coord, (-next_direction[0], -next_direction[1]), steps)
                         if next_item not in visited or visited[next_item] > next_distance:
                             make_queue(queue, min_length=next_distance)
@@ -62,9 +62,14 @@ def part1(file_contents: str) -> int:
                             visited[next_item] = next_distance
 
 
+def part1(file_contents: str) -> int:
+    grid = make_grid(file_contents)
+    return explore_grid(grid, min_steps=1, max_steps=3)
+
+
 def part2(file_contents: str) -> int:
-    data = parse_file_contents(file_contents)  # noqa
-    return 0
+    grid = make_grid(file_contents)
+    return explore_grid(grid, min_steps=4, max_steps=10)
 
 
 if __name__ == "__main__":
@@ -99,8 +104,8 @@ def test_part1_real():
 
 
 def test_part2():
-    assert part2(test_data) == 0
+    assert part2(test_data) == 94
 
 
-# def test_part2_real():
-#     assert part2(load_input(__file__)) == 0
+def test_part2_real():
+    assert part2(load_input(__file__)) == 829
