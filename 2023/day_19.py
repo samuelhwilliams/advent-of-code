@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-
-
+import math
 from rich import print
 
 from helpers import load_input
 
 
-def part1(file_contents: str) -> int:
+def parse_file(file_contents: str):
     para1, para2 = file_contents.strip().split("\n\n")
     workflows = {}
     for line in para1.splitlines():
+        # example para1 line: qqz{s>2770:qs,m<1801:hdj,R}
         name = line[: line.index("{")]
         conditions = [
             ((cond[0], cond[1], int(cond[2 : cond.index(":")])), cond[cond.index(":") + 1 :])
@@ -19,9 +19,17 @@ def part1(file_contents: str) -> int:
         ]
         workflows[name] = conditions
 
+    # EW but hey it does the job
+    # example para2 line: {x=787,m=2655,a=1222,s=2876}
+    parts = [eval(f"dict({line[1:-1]})") for line in para2.splitlines()]
+
+    return workflows, parts
+
+
+def part1(file_contents: str) -> int:
+    workflows, parts = parse_file(file_contents)
     total = 0
-    for line in para2.splitlines():
-        part = eval(f"dict({line[1:-1]})")  # EWWWW lol
+    for part in parts:
         curr_workflow = "in"
         while curr_workflow not in "AR":
             for condition, next_workflow in workflows[curr_workflow]:
@@ -39,9 +47,45 @@ def part1(file_contents: str) -> int:
     return total
 
 
+def calculate_variations_for_constraints(constraints):
+    PARTS = "sxma"
+    above = {k: 0 for k in PARTS}
+    below = {k: 4_001 for k in PARTS}
+    for check_attr, check_cond, check_val in constraints:
+        if check_cond == ">":
+            above[check_attr] = max(above[check_attr], check_val)
+        else:
+            below[check_attr] = min(below[check_attr], check_val)
+    return math.prod(len(range(above[k] + 1, below[k])) for k in PARTS)
+
+
+def yield_accepted_variations(workflows, curr_workflow, constraints: tuple):
+    for condition, next_workflow in workflows[curr_workflow]:
+        if condition:
+            check_attr, check_cond, check_val = condition
+            if next_workflow == "A":
+                yield calculate_variations_for_constraints(constraints + ((check_attr, check_cond, check_val),))
+            elif next_workflow != "R":
+                yield from yield_accepted_variations(
+                    workflows, next_workflow, constraints + ((check_attr, check_cond, check_val),)
+                )
+            constraints += (
+                (
+                    check_attr,
+                    ">" if check_cond == "<" else "<",
+                    check_val - 1 if check_cond == "<" else check_val + 1,
+                ),
+            )
+        else:
+            if next_workflow == "A":
+                yield calculate_variations_for_constraints(constraints)
+            elif next_workflow != "R":
+                yield from yield_accepted_variations(workflows, next_workflow, constraints)
+
+
 def part2(file_contents: str) -> int:
-    # data = parse_file_contents(file_contents)  # noqa
-    return 0
+    workflows, parts = parse_file(file_contents)
+    return sum(yield_accepted_variations(workflows, "in", tuple()))
 
 
 if __name__ == "__main__":
@@ -80,8 +124,8 @@ def test_part1_real():
 
 
 def test_part2():
-    assert part2(test_data) == 0
+    assert part2(test_data) == 167409079868000
 
 
-# def test_part2_real():
-#     assert part2(load_input(__file__)) == 0
+def test_part2_real():
+    assert part2(load_input(__file__)) == 121964982771486
