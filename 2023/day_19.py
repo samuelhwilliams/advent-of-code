@@ -19,9 +19,16 @@ def parse_file(file_contents: str):
         ]
         workflows[name] = conditions
 
-    # EW but hey it does the job
     # example para2 line: {x=787,m=2655,a=1222,s=2876}
-    parts = [eval(f"dict({line[1:-1]})") for line in para2.splitlines()]
+    parts = [
+        dict(
+            map(
+                lambda bits: (bits[0], int(bits[1])),
+                [part.split("=") for part in (parts for parts in line[1:-1].split(","))],
+            )
+        )
+        for line in para2.splitlines()
+    ]
 
     return workflows, parts
 
