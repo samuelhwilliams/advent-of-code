@@ -3,6 +3,7 @@ import collections
 import dataclasses
 from typing import Optional, Tuple, Iterable
 
+import math
 import pytest
 from rich import print
 
@@ -117,7 +118,40 @@ def part1(file_contents: str) -> int:
 
 
 def part2(file_contents: str) -> int:
-    pass
+    modules = parse_file_contents(file_contents)
+    queue: collections.deque[Tuple[bool, Module, str]] = collections.deque()
+
+    input_to_end = modules["rx"].inputs[0]  # there is only 1
+    inputs_to_penultimate = {m.id for m in input_to_end.inputs}  # there are 4
+    presses_to_activate = {}
+
+    high, low = 0, 0
+    button_presses = 0
+    while True:
+        button_presses += 1
+        queue.append((False, modules["broadcaster"], "button"))
+        while queue:
+            pulse, module, from_module = queue.popleft()
+            if pulse:
+                high += 1
+
+                # If we've got a high pulse at one of the inputs which activates the penultimate module, record
+                # how many presses it took to get there. From input spelunking, we know they are all conjunction
+                # modules.
+                # From reddit threads and from iterative checks, they activate on prime number button presses.
+                # Working out when they would all trigger a high pulse together is therefore just a case of LCM;
+                # with prime numbers that's just multiplying them all together.
+                if from_module in inputs_to_penultimate and from_module not in presses_to_activate:
+                    presses_to_activate[from_module] = button_presses
+
+                if len(presses_to_activate) == len(inputs_to_penultimate):
+                    return math.prod(presses_to_activate.values())
+            else:
+                low += 1
+            for next_pulse, next_module in module.pulse(from_module=from_module, high=pulse):
+                if next_pulse is False and next_module.id == "rx":
+                    return button_presses
+                queue.append((next_pulse, next_module, module.id))
 
 
 if __name__ == "__main__":
@@ -159,5 +193,5 @@ def test_part1_real():
     assert part1(load_input(__file__)) == 886347020
 
 
-# def test_part2_real():
-#     assert part2(load_input(__file__)) == 0
+def test_part2_real():
+    assert part2(load_input(__file__)) == 233283622908263
