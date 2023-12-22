@@ -61,28 +61,9 @@ def explore_grid(grid, start_coord, until_steps, start_even=True) -> int:
                     next_steps.add(next_step)
 
         steps += 1
-        print_grid(grid, even_step_locs, visited_steps)
-
-        # total steps: 26_501_365
-        # 131 steps:
-        #   1 full centre tile
-        #   4 * 1/4 startOdd edge tiles
-        # 262 steps:
-        #   1 full centre tile
-        #   1 * 4 (NWSE) full startOdd edge tiles
-        #   1 * 4 (NWSE) 1/4 startEven edge tiles
-        #   1 * 4 (NW,NE,SE,SW) 1/2 startEven diagonal tiles
-        # 393 steps:
-        #   1 full centre tile
-        #   1 * 4 (NWSE) full startOdd edge tiles
-        #   1 * 4 (NWSE) full startEven edge tiles
-        #   1 * 4 (NWSE) 1/4 startOdd edge tiles
-        #   1 * 4 (NW,NE,SE,SW) 1/2 startEven diagonal tiles
 
     print_grid(grid, even_step_locs, visited_steps)
     print(len(even_step_locs))
-    #
-    # breakpoint()
 
     return len(even_step_locs)
 
@@ -99,9 +80,6 @@ def part2(file_contents: str, until_steps=26_501_365) -> int:
     grid = parse_file_contents(file_contents)
     start_coord = next(coord for coord in grid if grid[coord] == "S")
     max_x, max_y = max(k[0] for k in grid), max(k[1] for k in grid)
-    # print_grid(grid, set(), set())
-
-    # until_steps = 4 * 131 + 65
 
     assert max_x == max_y
     grid_diameter = max_x + 1
@@ -109,8 +87,6 @@ def part2(file_contents: str, until_steps=26_501_365) -> int:
     grid_midpoint = (grid_diameter - 1) // 2
 
     megagrid_diameter = until_steps // grid_diameter
-    # if megagrid_diameter == 0:
-    return explore_grid(grid, start_coord, until_steps=until_steps)
 
     print(f"{megagrid_diameter=}")
     # Are the tips of the eventual diamond on even-centred grids?
@@ -119,11 +95,6 @@ def part2(file_contents: str, until_steps=26_501_365) -> int:
     partial_tile_steps = until_steps % grid_diameter
 
     assert partial_tile_steps == grid_midpoint == 65
-
-    # full_odd_diamonds = list(range(1, megagrid_diameter, 2))
-    # full_even_diamonds = list(range(2, megagrid_diameter, 2))
-    #
-    # print(f"{full_odd_diamonds=}, {full_even_diamonds=}")
 
     full_odd_diamonds = sum(range(1, megagrid_diameter, 2)) * 4
     full_even_diamonds = sum(range(2, megagrid_diameter, 2)) * 4
