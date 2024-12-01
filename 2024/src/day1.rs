@@ -18,13 +18,15 @@ pub fn solve_part1(input: &(Vec<u32>, Vec<u32>)) -> u32 {
     let mut sorted_input1 = input.0.clone();
     let mut sorted_input2 = input.1.clone();
 
-    sorted_input1.sort();
-    sorted_input2.sort();
+    // Unstable sort uses a typically-faster implementation, if the order of equal elements doesn't
+    // need to be preserved.
+    sorted_input1.sort_unstable();
+    sorted_input2.sort_unstable();
 
     sorted_input1
         .iter()
         .zip(sorted_input2.iter())
-        .map(|pair| pair.0.abs_diff(*pair.1))
+        .map(|(&a, &b)| a.abs_diff(b))
         .sum()
 }
 
@@ -32,12 +34,13 @@ pub fn solve_part1(input: &(Vec<u32>, Vec<u32>)) -> u32 {
 pub fn solve_part2(input: &(Vec<u32>, Vec<u32>)) -> u32 {
     let mut list2_counts = HashMap::new();
 
-    for el in input.1.iter() {
+    for &el in &input.1 {
         *list2_counts.entry(el).or_insert(0) += 1
     }
 
     input
         .0
         .iter()
-        .fold(0, |acc, el| acc + (el * list2_counts.get(el).unwrap_or(&0)))
+        .map(|&el| (el * list2_counts.get(&el).unwrap_or(&0)))
+        .sum()
 }
