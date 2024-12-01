@@ -44,3 +44,33 @@ pub fn solve_part2(input: &(Vec<u32>, Vec<u32>)) -> u32 {
         .map(|&el| (el * list2_counts.get(&el).unwrap_or(&0)))
         .sum()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generator() {
+        let input = "\
+1   5
+2   4
+3   3
+4   2
+5   1".trim();
+
+        assert_eq!(build_lists(input), (vec![1, 2, 3, 4, 5], vec![5, 4, 3, 2, 1]));
+    }
+
+    #[test]
+    fn test_solve_part1() {
+        assert_eq!(solve_part1(&(vec![1, 5], vec![3, 6])), 3);
+    }
+
+    #[test]
+    fn test_solve_part2() {
+        assert_eq!(solve_part2(&(vec![1, 5], vec![3, 6])), 0);
+        assert_eq!(solve_part2(&(vec![1], vec![1])), 1);
+        assert_eq!(solve_part2(&(vec![2], vec![2])), 2);
+        assert_eq!(solve_part2(&(vec![2], vec![2, 2])), 4);
+    }
+}
