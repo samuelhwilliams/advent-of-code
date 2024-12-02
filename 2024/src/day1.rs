@@ -15,17 +15,16 @@ pub fn build_lists(input: &str) -> (Vec<u32>, Vec<u32>) {
 
 #[aoc(day1, part1)]
 pub fn solve_part1(input: &(Vec<u32>, Vec<u32>)) -> u32 {
-    let mut sorted_input1 = input.0.clone();
-    let mut sorted_input2 = input.1.clone();
+    let mut input = input.clone();
 
     // Unstable sort uses a typically-faster implementation, if the order of equal elements doesn't
     // need to be preserved.
-    sorted_input1.sort_unstable();
-    sorted_input2.sort_unstable();
+    input.0.sort_unstable();
+    input.1.sort_unstable();
 
-    sorted_input1
+    input.0
         .iter()
-        .zip(sorted_input2.iter())
+        .zip(input.1.iter())
         .map(|(&a, &b)| a.abs_diff(b))
         .sum()
 }
@@ -41,7 +40,7 @@ pub fn solve_part2(input: &(Vec<u32>, Vec<u32>)) -> u32 {
     input
         .0
         .iter()
-        .map(|&el| (el * list2_counts.get(&el).unwrap_or(&0)))
+        .map(|el| (el * list2_counts.get(el).unwrap_or(&0)))
         .sum()
 }
 
