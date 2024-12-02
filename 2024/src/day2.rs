@@ -2,12 +2,12 @@ use aoc_runner_derive::{aoc, aoc_generator};
 
 #[aoc_generator(day2)]
 fn parse(input: &str) -> Vec<Vec<usize>> {
-    res: Vec<Vec<usize>> = input
+    input
         .lines()
         .map(|line| {
             line.split_whitespace().filter_map(|el| el.parse().ok()).collect()
         })
-        .collect();
+        .collect()
 }
 
 #[aoc(day2, part1)]
@@ -28,7 +28,10 @@ fn part1(input: &Vec<Vec<usize>>) -> usize {
 
 #[aoc(day2, part2)]
 fn part2(input: &Vec<Vec<usize>>) -> usize {
-    todo!()
+    // 503 - TOO LOW
+    // 539 - TOO HIGH
+
+    todo! {};
 }
 
 
