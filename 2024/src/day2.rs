@@ -5,7 +5,9 @@ fn parse(input: &str) -> Vec<Vec<usize>> {
     input
         .lines()
         .map(|line| {
-            line.split_whitespace().filter_map(|el| el.parse().ok()).collect()
+            line.split_whitespace()
+                .filter_map(|el| el.parse().ok())
+                .collect()
         })
         .collect()
 }
@@ -20,7 +22,8 @@ fn part1(input: &Vec<Vec<usize>>) -> usize {
                 .map(|pair| pair[0] as i32 - pair[1] as i32)
                 .collect();
 
-            diffs.iter().all(|&x| x.abs() >= 1 && x.abs() <= 3) && (diffs.iter().all(|&x| x > 0) || diffs.iter().all(|&x| x < 0))
+            diffs.iter().all(|&x| x.abs() >= 1 && x.abs() <= 3)
+                && (diffs.iter().all(|&x| x > 0) || diffs.iter().all(|&x| x < 0))
         })
         .filter(|&res| res == true)
         .count()
@@ -33,7 +36,6 @@ fn part2(input: &Vec<Vec<usize>>) -> usize {
 
     todo! {};
 }
-
 
 #[cfg(test)]
 mod tests {

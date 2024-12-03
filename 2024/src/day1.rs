@@ -22,7 +22,8 @@ pub fn solve_part1(input: &(Vec<u32>, Vec<u32>)) -> u32 {
     input.0.sort_unstable();
     input.1.sort_unstable();
 
-    input.0
+    input
+        .0
         .iter()
         .zip(input.1.iter())
         .map(|(&a, &b)| a.abs_diff(b))
@@ -55,9 +56,13 @@ mod tests {
 2   4
 3   3
 4   2
-5   1".trim();
+5   1"
+            .trim();
 
-        assert_eq!(build_lists(input), (vec![1, 2, 3, 4, 5], vec![5, 4, 3, 2, 1]));
+        assert_eq!(
+            build_lists(input),
+            (vec![1, 2, 3, 4, 5], vec![5, 4, 3, 2, 1])
+        );
     }
 
     #[test]
